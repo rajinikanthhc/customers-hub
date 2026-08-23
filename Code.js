@@ -3324,3 +3324,432 @@ function universalSearch(
   );
 
 }
+
+/*************************************************
+ * SETTINGS MANAGER
+ * ADD / EDIT / DELETE SETTINGS VALUES
+ *************************************************/
+
+function getSettingList(settingName) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Settings');
+
+  if (!sheet) {
+    throw new Error('Settings sheet not found.');
+  }
+
+  const values =
+    sheet.getDataRange().getValues();
+
+  if (!values.length) {
+    throw new Error('Settings sheet is empty.');
+  }
+
+  const headers =
+    values[0].map(function (h) {
+      return String(h || '').trim();
+    });
+
+  const column =
+    headers.findIndex(function (header) {
+      return header.toLowerCase() ===
+        String(settingName || '').trim().toLowerCase();
+    });
+
+  if (column === -1) {
+    throw new Error(
+      'Setting column not found: ' + settingName
+    );
+  }
+
+  const list = [];
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const value =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      value &&
+      !list.some(function (item) {
+        return item.toLowerCase() === value.toLowerCase();
+      })
+    ) {
+
+      list.push(value);
+
+    }
+
+  }
+
+  return list;
+}
+
+
+/*************************************************
+ * ADD SETTING VALUE
+ *************************************************/
+
+function addSettingValue(
+  settingName,
+  value
+) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Settings');
+
+  if (!sheet) {
+    throw new Error('Settings sheet not found.');
+  }
+
+  const cleanName =
+    String(settingName || '').trim();
+
+  const cleanValue =
+    String(value || '').trim();
+
+  if (!cleanName) {
+    throw new Error('Setting name is required.');
+  }
+
+  if (!cleanValue) {
+    throw new Error('Value is required.');
+  }
+
+  const values =
+    sheet.getDataRange().getValues();
+
+  const headers =
+    values[0].map(function (h) {
+      return String(h || '').trim();
+    });
+
+  const column =
+    headers.findIndex(function (header) {
+      return header.toLowerCase() ===
+        cleanName.toLowerCase();
+    });
+
+  if (column === -1) {
+    throw new Error(
+      'Setting column not found: ' + cleanName
+    );
+  }
+
+  /*
+   * Prevent duplicate values.
+   */
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      cleanValue.toLowerCase()
+    ) {
+
+      throw new Error(
+        '"' + cleanValue +
+        '" already exists.'
+      );
+
+    }
+
+  }
+
+  /*
+   * Put new value in first empty cell.
+   */
+
+  let targetRow = -1;
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (!existing) {
+
+      targetRow =
+        row + 1;
+
+      break;
+
+    }
+
+  }
+
+  /*
+   * If no empty cell exists,
+   * append a new row.
+   */
+
+  if (targetRow === -1) {
+
+    targetRow =
+      sheet.getLastRow() + 1;
+
+  }
+
+  sheet
+    .getRange(
+      targetRow,
+      column + 1
+    )
+    .setValue(
+      cleanValue
+    );
+
+  return true;
+}
+
+
+/*************************************************
+ * EDIT SETTING VALUE
+ *************************************************/
+
+function updateSettingValue(
+  settingName,
+  oldValue,
+  newValue
+) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Settings');
+
+  if (!sheet) {
+    throw new Error('Settings sheet not found.');
+  }
+
+  const cleanName =
+    String(settingName || '').trim();
+
+  const oldText =
+    String(oldValue || '').trim();
+
+  const newText =
+    String(newValue || '').trim();
+
+  if (!newText) {
+    throw new Error('Value is required.');
+  }
+
+  const values =
+    sheet.getDataRange().getValues();
+
+  const headers =
+    values[0].map(function (h) {
+      return String(h || '').trim();
+    });
+
+  const column =
+    headers.findIndex(function (header) {
+      return header.toLowerCase() ===
+        cleanName.toLowerCase();
+    });
+
+  if (column === -1) {
+    throw new Error(
+      'Setting column not found: ' + cleanName
+    );
+  }
+
+  let foundRow = -1;
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      oldText.toLowerCase()
+    ) {
+
+      foundRow =
+        row + 1;
+
+      break;
+
+    }
+
+  }
+
+  if (foundRow === -1) {
+
+    throw new Error(
+      'Existing value not found: ' +
+      oldText
+    );
+
+  }
+
+  /*
+   * Prevent duplicate after editing.
+   */
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    if (
+      row + 1 === foundRow
+    ) {
+      continue;
+    }
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      newText.toLowerCase()
+    ) {
+
+      throw new Error(
+        '"' + newText +
+        '" already exists.'
+      );
+
+    }
+
+  }
+
+  sheet
+    .getRange(
+      foundRow,
+      column + 1
+    )
+    .setValue(
+      newText
+    );
+
+  return true;
+}
+
+
+/*************************************************
+ * DELETE SETTING VALUE
+ *************************************************/
+
+function deleteSettingValue(
+  settingName,
+  value
+) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Settings');
+
+  if (!sheet) {
+    throw new Error('Settings sheet not found.');
+  }
+
+  const cleanName =
+    String(settingName || '').trim();
+
+  const cleanValue =
+    String(value || '').trim();
+
+  const values =
+    sheet.getDataRange().getValues();
+
+  const headers =
+    values[0].map(function (h) {
+      return String(h || '').trim();
+    });
+
+  const column =
+    headers.findIndex(function (header) {
+      return header.toLowerCase() ===
+        cleanName.toLowerCase();
+    });
+
+  if (column === -1) {
+    throw new Error(
+      'Setting column not found: ' + cleanName
+    );
+  }
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      cleanValue.toLowerCase()
+    ) {
+
+      /*
+       * Clear only this cell.
+       * Do NOT delete the entire row because
+       * other Settings columns may contain data.
+       */
+
+      sheet
+        .getRange(
+          row + 1,
+          column + 1
+        )
+        .clearContent();
+
+      return true;
+
+    }
+
+  }
+
+  throw new Error(
+    'Value not found: ' + cleanValue
+  );
+
+}
