@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+  <base target="_top">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  >
+
+  <title>Customers Hub</title>
+
+  <?!= include('CSS'); ?>
+
+</head>
+
+
+<body>
+
+
+<!-- TOP HEADER -->
+
+<header class="app-header">
+
+  <div class="brand">
+
+    <div class="brand-icon">
+      C
+    </div>
+
+    <div>
+
+      <div class="brand-title">
+        Customers Hub
+      </div>
+
+      <div class="brand-subtitle">
+        Industrial Hubs
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <div class="hub-count">
+
+    <span id="hubCount">
+      0
+    </span>
+
+    Industrial Hubs
+
+  </div>
+
+</header>
+
+
+
+<!-- FULL MAP -->
+
+<main class="map-container">
+
+  <div
+    id="map"
+    class="map"
+  ></div>
+
+
+  <!-- LOADING -->
+
+  <div
+    id="loading"
+    class="loading-overlay"
+  >
+    Loading Industrial Hubs...
+  </div>
+
+
+  <!-- ERROR -->
+
+  <div
+    id="error"
+    class="error-overlay hidden"
+  ></div>
+
+
+  <!-- CUSTOMER PANEL -->
+
+  <aside
+    id="customerView"
+    class="floating-panel hidden"
+  >
+
+    <div class="panel-header">
+
+      <button
+        id="backToHubs"
+        class="back-button"
+        type="button"
+      >
+        ←
+      </button>
+
+
+      <div class="selected-hub-heading">
+
+        <div
+          id="selectedHubName"
+          class="panel-title"
+        >
+        </div>
+
+        <div
+          id="selectedHubCity"
+          class="panel-subtitle"
+        >
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="customerLoading"
+      class="loading"
+    >
+      Loading Customers...
+    </div>
+
+
+    <div
+      id="customerList"
+      class="customer-list"
+    ></div>
+
+  </aside>
+
+
+
+  <!-- CUSTOMER DETAILS -->
+
+  <aside
+    id="detailView"
+    class="floating-panel hidden"
+  >
+
+    <div class="panel-header">
+
+      <button
+        id="backToCustomers"
+        class="back-button"
+        type="button"
+      >
+        ←
+      </button>
+
+      <div class="panel-title">
+        Customer Details
+      </div>
+
+    </div>
+
+
+    <div
+      id="customerDetail"
+      class="customer-detail"
+    ></div>
+
+  </aside>
+
+
+</main>
+
+
+
+<?!= include('JS'); ?>
+
+
+</body>
+
+</html>

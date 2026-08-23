@@ -1,0 +1,1553 @@
+<script>
+
+/*************************************************
+ * GLOBAL VARIABLES
+ *************************************************/
+
+let map = null;
+
+let hubs = [];
+
+let customers = [];
+
+let markers = [];
+
+let activeHubIndex = -1;
+
+let activeHub = null;
+
+let activeCustomer = null;
+
+
+/*************************************************
+ * START
+ *************************************************/
+
+window.addEventListener('load', function () {
+
+  bindEvents();
+
+  loadApplication();
+
+});
+
+
+/*************************************************
+ * BIND EVENTS
+ *************************************************/
+
+function bindEvents() {
+
+  document
+    .getElementById('backToHubs')
+    .addEventListener(
+      'click',
+      closeCustomerPanel
+    );
+
+
+  document
+    .getElementById('backToCustomers')
+    .addEventListener(
+      'click',
+      showCustomerView
+    );
+
+}
+
+
+/*************************************************
+ * LOAD APPLICATION
+ *************************************************/
+
+function loadApplication() {
+
+  showLoading(true);
+
+  hideError();
+
+
+  google.script.run
+
+    .withSuccessHandler(function (config) {
+
+      if (
+        !config ||
+        !config.mapApiKey
+      ) {
+
+        showLoading(false);
+
+        showError(
+          'Google Maps API key was not found.'
+        );
+
+        return;
+
+      }
+
+
+      loadGoogleMaps(
+        config.mapApiKey
+      );
+
+    })
+
+    .withFailureHandler(function (error) {
+
+      showLoading(false);
+
+      showError(
+        getErrorMessage(error)
+      );
+
+    })
+
+    .getAppConfig();
+
+}
+
+
+/*************************************************
+ * LOAD GOOGLE MAPS
+ *************************************************/
+
+function loadGoogleMaps(apiKey) {
+
+  if (
+    window.google &&
+    window.google.maps
+  ) {
+
+    initializeMap();
+
+    return;
+
+  }
+
+
+  window.initCustomersHubMap =
+    function () {
+
+      initializeMap();
+
+    };
+
+
+  const script =
+    document.createElement('script');
+
+
+  /*
+   * IMPORTANT:
+   * No libraries=marker.
+   */
+
+  script.src =
+    'https://maps.googleapis.com/maps/api/js' +
+    '?key=' +
+    encodeURIComponent(apiKey) +
+    '&callback=initCustomersHubMap';
+
+
+  script.async = true;
+
+  script.defer = true;
+
+
+  script.onerror =
+    function () {
+
+      showLoading(false);
+
+      showError(
+        'Unable to load Google Maps. ' +
+        'Please check your API key and Maps JavaScript API.'
+      );
+
+    };
+
+
+  document.head.appendChild(script);
+
+}
+
+
+/*************************************************
+ * INITIALIZE MAP
+ *************************************************/
+
+function initializeMap() {
+
+  map =
+    new google.maps.Map(
+      document.getElementById('map'),
+      {
+
+        center: {
+          lat: 12.9716,
+          lng: 77.5946
+        },
+
+        zoom: 7,
+
+
+        /*
+         * SALES TERRITORY MAP
+         *
+         * Keep geography:
+         * - roads
+         * - boundaries
+         * - water
+         * - land
+         *
+         * Hide Google text labels.
+         */
+
+        styles: [
+
+          {
+            featureType: 'all',
+
+            elementType: 'labels',
+
+            stylers: [
+              {
+                visibility: 'off'
+              }
+            ]
+
+          },
+
+
+          {
+            featureType: 'road',
+
+            elementType: 'geometry',
+
+            stylers: [
+              {
+                visibility: 'on'
+              }
+            ]
+
+          },
+
+
+          {
+            featureType: 'administrative',
+
+            elementType: 'geometry',
+
+            stylers: [
+              {
+                visibility: 'on'
+              }
+            ]
+
+          },
+
+
+          {
+            featureType: 'landscape',
+
+            elementType: 'geometry',
+
+            stylers: [
+              {
+                visibility: 'on'
+              }
+            ]
+
+          },
+
+
+          {
+            featureType: 'water',
+
+            elementType: 'geometry',
+
+            stylers: [
+              {
+                visibility: 'on'
+              }
+            ]
+
+          }
+
+        ],
+
+
+        mapTypeControl: false,
+
+        streetViewControl: false,
+
+        fullscreenControl: false,
+
+        zoomControl: true,
+
+        clickableIcons: false,
+
+        gestureHandling: 'greedy'
+
+      }
+    );
+
+
+  loadHubs();
+
+}
+
+
+/*************************************************
+ * LOAD HUBS
+ *************************************************/
+
+function loadHubs() {
+
+  google.script.run
+
+    .withSuccessHandler(function (data) {
+
+      hubs = data || [];
+
+
+      document
+        .getElementById('hubCount')
+        .textContent =
+        hubs.length;
+
+
+      renderHubMarkers();
+
+
+      showLoading(false);
+
+    })
+
+    .withFailureHandler(function (error) {
+
+      showLoading(false);
+
+      showError(
+        getErrorMessage(error)
+      );
+
+    })
+
+    .getIndustrialHubs();
+
+}
+
+
+/*************************************************
+ * RENDER HUB MARKERS
+ *
+ * NO BULLET
+ * BLACK GOOGLE-LIKE TEXT
+ *************************************************/
+
+function renderHubMarkers() {
+
+  /*
+   * Remove old markers.
+   */
+
+  markers.forEach(
+    function (marker) {
+
+      marker.setMap(null);
+
+    }
+  );
+
+
+  markers = [];
+
+
+  if (!hubs.length) {
+
+    return;
+
+  }
+
+
+  const bounds =
+    new google.maps.LatLngBounds();
+
+
+  hubs.forEach(
+    function (hub, index) {
+
+      const position = {
+
+        lat:
+          Number(
+            hub.latitude
+          ),
+
+        lng:
+          Number(
+            hub.longitude
+          )
+
+      };
+
+
+      /*
+       * Transparent icon.
+       *
+       * No bullet / pin.
+       */
+
+      const transparentIcon = {
+
+        url:
+          'data:image/svg+xml;charset=UTF-8,' +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" ' +
+            'width="1" height="1">' +
+            '</svg>'
+          ),
+
+        scaledSize:
+          new google.maps.Size(
+            1,
+            1
+          ),
+
+        anchor:
+          new google.maps.Point(
+            0,
+            0
+          )
+
+      };
+
+
+      /*
+       * Black hub name.
+       *
+       * Similar visual treatment
+       * to Google map labels.
+       */
+
+      const marker =
+        new google.maps.Marker({
+
+          position: position,
+
+          map: map,
+
+          title: hub.hub,
+
+          icon: transparentIcon,
+
+          label: {
+
+            text: hub.hub,
+
+            color: '#202124',
+
+            fontFamily:
+              'Roboto, Arial, sans-serif',
+
+            fontSize: '12px',
+
+            fontWeight: '500'
+
+          }
+
+        });
+
+
+      /*
+       * CLICK HUB
+       */
+
+      marker.addListener(
+        'click',
+        function () {
+
+          selectHub(index);
+
+        }
+      );
+
+
+      markers.push(marker);
+
+      bounds.extend(position);
+
+    }
+  );
+
+
+  /*
+   * Show all hubs.
+   */
+
+  if (hubs.length === 1) {
+
+    map.setCenter({
+
+      lat:
+        Number(
+          hubs[0].latitude
+        ),
+
+      lng:
+        Number(
+          hubs[0].longitude
+        )
+
+    });
+
+
+    map.setZoom(11);
+
+  } else {
+
+    map.fitBounds(bounds);
+
+  }
+
+}
+
+
+/*************************************************
+ * SELECT INDUSTRIAL HUB
+ *************************************************/
+
+function selectHub(index) {
+
+  if (
+    index < 0 ||
+    index >= hubs.length
+  ) {
+
+    return;
+
+  }
+
+
+  activeHubIndex =
+    index;
+
+
+  activeHub =
+    hubs[index];
+
+
+  /*
+   * Move map to hub.
+   */
+
+  map.panTo({
+
+    lat:
+      Number(
+        activeHub.latitude
+      ),
+
+    lng:
+      Number(
+        activeHub.longitude
+      )
+
+  });
+
+
+  map.setZoom(11);
+
+
+  /*
+   * Load customers.
+   */
+
+  loadCustomersByHub(
+    activeHub.hub
+  );
+
+}
+
+
+/*************************************************
+ * LOAD CUSTOMERS
+ *************************************************/
+
+function loadCustomersByHub(
+  hubName
+) {
+
+  showCustomerView();
+
+
+  const loading =
+    document.getElementById(
+      'customerLoading'
+    );
+
+
+  const list =
+    document.getElementById(
+      'customerList'
+    );
+
+
+  loading.classList.remove(
+    'hidden'
+  );
+
+
+  list.innerHTML = '';
+
+
+  document
+    .getElementById(
+      'selectedHubName'
+    )
+    .textContent =
+    hubName;
+
+
+  document
+    .getElementById(
+      'selectedHubCity'
+    )
+    .textContent =
+    activeHub
+      ? activeHub.city
+      : '';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (data) {
+
+        customers =
+          data || [];
+
+
+        loading.classList.add(
+          'hidden'
+        );
+
+
+        renderCustomerList();
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        loading.classList.add(
+          'hidden'
+        );
+
+
+        list.innerHTML =
+          '<div class="loading">' +
+          escapeHtml(
+            getErrorMessage(error)
+          ) +
+          '</div>';
+
+      }
+    )
+
+    .getCustomersByHub(
+      hubName
+    );
+
+}
+
+
+/*************************************************
+ * RENDER CUSTOMERS
+ *************************************************/
+
+function renderCustomerList() {
+
+  const list =
+    document.getElementById(
+      'customerList'
+    );
+
+
+  list.innerHTML = '';
+
+
+  if (!customers.length) {
+
+    list.innerHTML =
+      '<div class="loading">' +
+      'No customers found in this Industrial Hub.' +
+      '</div>';
+
+    return;
+
+  }
+
+
+  customers.forEach(
+    function (
+      customer,
+      index
+    ) {
+
+      const item =
+        document.createElement(
+          'div'
+        );
+
+
+      item.className =
+        'customer-item';
+
+
+      item.innerHTML =
+
+        '<div class="customer-name">' +
+
+          escapeHtml(
+            customer.customerName
+          ) +
+
+        '</div>' +
+
+        '<div class="customer-area">' +
+
+          'Industrial Area: ' +
+
+          escapeHtml(
+            customer.industrialArea ||
+            '-'
+          ) +
+
+        '</div>' +
+
+        '<div class="customer-city">' +
+
+          escapeHtml(
+            customer.city || ''
+          ) +
+
+        '</div>';
+
+
+      item.addEventListener(
+        'click',
+        function () {
+
+          selectCustomer(index);
+
+        }
+      );
+
+
+      list.appendChild(
+        item
+      );
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * SELECT CUSTOMER
+ *************************************************/
+
+function selectCustomer(index) {
+
+  if (
+    index < 0 ||
+    index >= customers.length
+  ) {
+
+    return;
+
+  }
+
+
+  activeCustomer =
+    customers[index];
+
+
+  renderCustomerDetail();
+
+
+  showDetailView();
+
+
+  /*
+   * Keep map at selected hub.
+   */
+
+  if (activeHub) {
+
+    map.panTo({
+
+      lat:
+        Number(
+          activeHub.latitude
+        ),
+
+      lng:
+        Number(
+          activeHub.longitude
+        )
+
+    });
+
+  }
+
+}
+
+
+/*************************************************
+ * CUSTOMER DETAILS
+ *************************************************/
+
+function renderCustomerDetail() {
+
+  const customer =
+    activeCustomer;
+
+
+  const detail =
+    document.getElementById(
+      'customerDetail'
+    );
+
+
+  if (!customer) {
+
+    detail.innerHTML = '';
+
+    return;
+
+  }
+
+
+  let html = '';
+
+
+  html +=
+
+    '<div class="detail-company-id">' +
+
+      'Company ID: ' +
+
+      escapeHtml(
+        customer.companyId
+      ) +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="detail-company-name">' +
+
+      escapeHtml(
+        customer.customerName
+      ) +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="detail-grid">';
+
+
+  html += detailCard(
+    'Industrial Area',
+    customer.industrialArea
+  );
+
+
+  html += detailCard(
+    'Industrial Hub',
+    customer.industrialHub
+  );
+
+
+  html += detailCard(
+    'City',
+    customer.city
+  );
+
+
+  html += detailCard(
+    'Type',
+    customer.type
+  );
+
+
+  html += detailCard(
+    'Status',
+    customer.status
+  );
+
+
+  html += detailCard(
+    'Potential',
+    customer.potential
+  );
+
+
+  html += '</div>';
+
+
+  /*
+   * Website.
+   */
+
+  if (customer.website) {
+
+    html +=
+
+      '<a class="website-link" ' +
+
+      'href="' +
+
+      escapeAttribute(
+        normalizeUrl(
+          customer.website
+        )
+      ) +
+
+      '" target="_blank">' +
+
+      'Visit Website' +
+
+      '</a>';
+
+  }
+
+
+  /*
+   * Notes.
+   */
+
+  if (customer.notes) {
+
+    html +=
+
+      '<div class="notes">' +
+
+        '<strong>Notes</strong><br>' +
+
+        escapeHtml(
+          customer.notes
+        ) +
+
+      '</div>';
+
+  }
+
+
+  /*
+   * People.
+   */
+
+  html +=
+
+    '<div class="people-heading">' +
+
+      'People' +
+
+    '</div>' +
+
+    '<div id="peopleList">' +
+
+      '<div class="loading">' +
+
+        'Loading contacts...' +
+
+      '</div>' +
+
+    '</div>';
+
+
+  detail.innerHTML =
+    html;
+
+
+  loadPeople(
+    customer.companyId
+  );
+
+}
+
+
+/*************************************************
+ * DETAIL CARD
+ *************************************************/
+
+function detailCard(
+  label,
+  value
+) {
+
+  return
+
+    '<div class="detail-card">' +
+
+      '<div class="detail-label">' +
+
+        escapeHtml(
+          label
+        ) +
+
+      '</div>' +
+
+      '<div class="detail-value">' +
+
+        escapeHtml(
+          value || '-'
+        ) +
+
+      '</div>' +
+
+    '</div>';
+
+}
+
+
+/*************************************************
+ * LOAD PEOPLE
+ *************************************************/
+
+function loadPeople(
+  companyId
+) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (people) {
+
+        renderPeople(
+          people || []
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        const container =
+          document.getElementById(
+            'peopleList'
+          );
+
+
+        if (container) {
+
+          container.innerHTML =
+
+            '<div class="loading">' +
+
+              escapeHtml(
+                getErrorMessage(error)
+              ) +
+
+            '</div>';
+
+        }
+
+      }
+    )
+
+    .getPeopleByCompanyId(
+      companyId
+    );
+
+}
+
+
+/*************************************************
+ * RENDER PEOPLE
+ *************************************************/
+
+function renderPeople(
+  people
+) {
+
+  const container =
+    document.getElementById(
+      'peopleList'
+    );
+
+
+  if (!container) {
+
+    return;
+
+  }
+
+
+  if (!people.length) {
+
+    container.innerHTML =
+      '<div class="loading">' +
+      'No contact details available.' +
+      '</div>';
+
+    return;
+
+  }
+
+
+  container.innerHTML = '';
+
+
+  people.forEach(
+    function (person) {
+
+      const card =
+        document.createElement(
+          'div'
+        );
+
+
+      card.className =
+        'person-card';
+
+
+      let html = '';
+
+
+      html +=
+
+        '<div class="person-name">' +
+
+          escapeHtml(
+            person.name
+          ) +
+
+        '</div>';
+
+
+      if (person.designation) {
+
+        html +=
+
+          '<div class="person-designation">' +
+
+            escapeHtml(
+              person.designation
+            ) +
+
+          '</div>';
+
+      }
+
+
+      if (person.phone) {
+
+        html +=
+
+          '<div class="person-row">' +
+
+            '📞 ' +
+
+            '<a href="tel:' +
+
+              escapeAttribute(
+                person.phone
+              ) +
+
+            '">' +
+
+              escapeHtml(
+                person.phone
+              ) +
+
+            '</a>' +
+
+          '</div>';
+
+      }
+
+
+      if (person.email) {
+
+        html +=
+
+          '<div class="person-row">' +
+
+            '✉ ' +
+
+            '<a href="mailto:' +
+
+              escapeAttribute(
+                person.email
+              ) +
+
+            '">' +
+
+              escapeHtml(
+                person.email
+              ) +
+
+            '</a>' +
+
+          '</div>';
+
+      }
+
+
+      if (person.visitingCardUrl) {
+
+        html +=
+
+          '<a class="visiting-card" ' +
+
+            'href="' +
+
+              escapeAttribute(
+                person.visitingCardUrl
+              ) +
+
+            '" ' +
+
+            'target="_blank">' +
+
+            'Visiting Card' +
+
+          '</a>';
+
+      }
+
+
+      card.innerHTML =
+        html;
+
+
+      container.appendChild(
+        card
+      );
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * SHOW CUSTOMER PANEL
+ *************************************************/
+
+function showCustomerView() {
+
+  document
+    .getElementById(
+      'detailView'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+
+  document
+    .getElementById(
+      'customerView'
+    )
+    .classList.remove(
+      'hidden'
+    );
+
+}
+
+
+/*************************************************
+ * SHOW CUSTOMER DETAILS
+ *************************************************/
+
+function showDetailView() {
+
+  document
+    .getElementById(
+      'customerView'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+
+  document
+    .getElementById(
+      'detailView'
+    )
+    .classList.remove(
+      'hidden'
+    );
+
+}
+
+
+/*************************************************
+ * CLOSE CUSTOMER PANEL
+ *************************************************/
+
+function closeCustomerPanel() {
+
+  document
+    .getElementById(
+      'customerView'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+
+  document
+    .getElementById(
+      'detailView'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+
+  activeCustomer = null;
+
+}
+
+
+/*************************************************
+ * LOADING
+ *************************************************/
+
+function showLoading(show) {
+
+  const loading =
+    document.getElementById(
+      'loading'
+    );
+
+
+  if (!loading) {
+
+    return;
+
+  }
+
+
+  if (show) {
+
+    loading.classList.remove(
+      'hidden'
+    );
+
+  } else {
+
+    loading.classList.add(
+      'hidden'
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * ERROR
+ *************************************************/
+
+function showError(message) {
+
+  const error =
+    document.getElementById(
+      'error'
+    );
+
+
+  if (!error) {
+
+    return;
+
+  }
+
+
+  error.textContent =
+    message ||
+    'Something went wrong.';
+
+
+  error.classList.remove(
+    'hidden'
+  );
+
+}
+
+
+function hideError() {
+
+  const error =
+    document.getElementById(
+      'error'
+    );
+
+
+  if (!error) {
+
+    return;
+
+  }
+
+
+  error.classList.add(
+    'hidden'
+  );
+
+}
+
+
+/*************************************************
+ * URL
+ *************************************************/
+
+function normalizeUrl(url) {
+
+  let value =
+    String(
+      url || ''
+    ).trim();
+
+
+  if (!value) {
+
+    return '';
+
+  }
+
+
+  if (
+    !/^https?:\/\//i.test(
+      value
+    )
+  ) {
+
+    value =
+      'https://' +
+      value;
+
+  }
+
+
+  return value;
+
+}
+
+
+/*************************************************
+ * ESCAPE HTML
+ *************************************************/
+
+function escapeHtml(value) {
+
+  return String(
+    value || ''
+  )
+
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+
+    .replace(
+      /</g,
+      '&lt;'
+    )
+
+    .replace(
+      />/g,
+      '&gt;'
+    )
+
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+
+    .replace(
+      /'/g,
+      '&#039;'
+    );
+
+}
+
+
+/*************************************************
+ * ESCAPE ATTRIBUTE
+ *************************************************/
+
+function escapeAttribute(value) {
+
+  return String(
+    value || ''
+  )
+
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+
+    .replace(
+      /</g,
+      '&lt;'
+    )
+
+    .replace(
+      />/g,
+      '&gt;'
+    );
+
+}
+
+
+/*************************************************
+ * ERROR MESSAGE
+ *************************************************/
+
+function getErrorMessage(error) {
+
+  if (!error) {
+
+    return 'Unknown error.';
+
+  }
+
+
+  if (
+    typeof error === 'string'
+  ) {
+
+    return error;
+
+  }
+
+
+  return (
+    error.message ||
+    'Unknown error.'
+  );
+
+}
+
+</script>
