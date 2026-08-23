@@ -706,6 +706,18 @@ function renderCustomerList() {
 
   list.innerHTML = '';
 
+    /*
+   * Show customer count for selected hub
+   */
+
+  document.getElementById(
+    'selectedHubCity'
+  ).textContent =
+    (activeHub ? activeHub.city : '') +
+    ' · ' +
+    customers.length +
+    ' Customers';
+
 
   if (!customers.length) {
 
