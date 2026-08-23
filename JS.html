@@ -937,25 +937,39 @@ function renderCustomerDetail() {
    * CUSTOMER NAME
    **********************************************/
 
-  html +=
-    '<div class="detail-company-name">' +
-      escapeHtml(
-        customerName || '-'
-      ) +
-    '</div>';
-
-
   /**********************************************
-   * COMPANY ID
-   **********************************************/
+ * CUSTOMER NAME
+ **********************************************/
 
-  html +=
-    '<div class="detail-company-id">' +
-      'Company ID: ' +
-      escapeHtml(
-        companyId || '-'
-      ) +
-    '</div>';
+html +=
+  '<div class="detail-header-row">' +
+
+    '<div>' +
+
+      '<div class="detail-company-name">' +
+        escapeHtml(
+          customerName || '-'
+        ) +
+      '</div>' +
+
+      '<div class="detail-company-id">' +
+        'Company ID: ' +
+        escapeHtml(
+          companyId || '-'
+        ) +
+      '</div>' +
+
+    '</div>' +
+
+    '<button ' +
+      'class="edit-icon-button" ' +
+      'type="button" ' +
+      'title="Edit Customer" ' +
+      'onclick="openCustomerEdit()">' +
+      '✎' +
+    '</button>' +
+
+  '</div>';
 
 
   /**********************************************
@@ -1255,15 +1269,25 @@ function renderPeople(people) {
 
   if (!people || !people.length) {
 
-    container.innerHTML =
-      '<div class="no-contacts">' +
+  container.innerHTML =
+
+    '<div class="no-contacts">' +
+
+      '<div>' +
         'No contact details available.' +
-      '</div>';
+      '</div>' +
 
-    return;
+      '<button ' +
+        'class="add-contact-button" ' +
+        'onclick="openPersonEdit(\'\')">' +
+        '+ Add Contact' +
+      '</button>' +
 
-  }
+    '</div>';
 
+  return;
+
+}
 
   container.innerHTML = '';
 
@@ -1320,9 +1344,30 @@ function renderPeople(people) {
 
 
     html +=
-      '<div class="person-name">' +
-        escapeHtml(name || '-') +
-      '</div>';
+  '<div class="person-header">' +
+
+    '<div class="person-name">' +
+      escapeHtml(name || '-') +
+    '</div>' +
+
+    '<button ' +
+      'class="person-edit-button" ' +
+      'title="Edit Contact" ' +
+      'onclick="openPersonEdit(\'' +
+        escapeAttribute(
+          getField(
+            person,
+            [
+              'peopleId',
+              'People ID'
+            ]
+          )
+        ) +
+      '\')">' +
+      '✎' +
+    '</button>' +
+
+  '</div>';
 
 
     if (designation) {
@@ -1794,6 +1839,703 @@ function resetHomeView() {
     map.setZoom(11);
 
   }
+
+}
+
+/*************************************************
+ * EDIT CUSTOMER
+ *************************************************/
+
+function openCustomerEdit() {
+
+  if (!activeCustomer) {
+    return;
+  }
+
+
+  const customer = activeCustomer;
+
+
+  const companyId =
+    getField(customer, [
+      'companyId',
+      'Company ID'
+    ]);
+
+
+  const customerName =
+    getField(customer, [
+      'customerName',
+      'Customer Name',
+      'Company'
+    ]);
+
+
+  const industrialArea =
+    getField(customer, [
+      'industrialArea',
+      'Industrial Area'
+    ]);
+
+
+  const industrialHub =
+    getField(customer, [
+      'industrialHub',
+      'Industrial Hub'
+    ]);
+
+
+  const city =
+    getField(customer, [
+      'city',
+      'City'
+    ]);
+
+
+  const type =
+    getField(customer, [
+      'type',
+      'Type'
+    ]);
+
+
+  const status =
+    getField(customer, [
+      'status',
+      'Status'
+    ]);
+
+
+  const potential =
+    getField(customer, [
+      'potential',
+      'Potential'
+    ]);
+
+
+  const website =
+    getField(customer, [
+      'website',
+      'Website'
+    ]);
+
+
+  const notes =
+    getField(customer, [
+      'notes',
+      'Notes'
+    ]);
+
+
+  openEditModal(
+    'Edit Customer',
+    `
+      <div class="edit-field">
+        <label>Company ID</label>
+        <input
+          id="editCompanyId"
+          value="${escapeAttribute(companyId)}"
+          readonly
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Customer Name</label>
+        <input
+          id="editCustomerName"
+          value="${escapeAttribute(customerName)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Industrial Area</label>
+        <input
+          id="editIndustrialArea"
+          value="${escapeAttribute(industrialArea)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Industrial Hub</label>
+        <input
+          id="editIndustrialHub"
+          value="${escapeAttribute(industrialHub)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>City</label>
+        <input
+          id="editCity"
+          value="${escapeAttribute(city)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Type</label>
+        <input
+          id="editType"
+          value="${escapeAttribute(type)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Status</label>
+        <input
+          id="editStatus"
+          value="${escapeAttribute(status)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Potential</label>
+        <input
+          id="editPotential"
+          value="${escapeAttribute(potential)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Website</label>
+        <input
+          id="editWebsite"
+          value="${escapeAttribute(website)}"
+        >
+      </div>
+
+      <div class="edit-field">
+        <label>Notes</label>
+        <textarea id="editNotes">${escapeHtml(notes)}</textarea>
+      </div>
+    `,
+    saveCustomer
+  );
+
+}
+
+/*************************************************
+ * EDIT MODAL
+ *************************************************/
+
+function openEditModal(
+  title,
+  content,
+  saveFunction
+) {
+
+  let modal =
+    document.getElementById(
+      'editModal'
+    );
+
+
+  if (!modal) {
+
+    modal =
+      document.createElement('div');
+
+    modal.id =
+      'editModal';
+
+    modal.className =
+      'edit-modal';
+
+    document.body.appendChild(
+      modal
+    );
+
+  }
+
+
+  modal.innerHTML =
+
+    '<div class="edit-modal-box">' +
+
+      '<div class="edit-modal-header">' +
+
+        '<div class="edit-modal-title">' +
+          escapeHtml(title) +
+        '</div>' +
+
+        '<button ' +
+          'class="modal-close" ' +
+          'onclick="closeEditModal()">' +
+          '×' +
+        '</button>' +
+
+      '</div>' +
+
+      '<div class="edit-modal-body">' +
+        content +
+      '</div>' +
+
+      '<div class="edit-modal-footer">' +
+
+        '<button ' +
+          'class="cancel-button" ' +
+          'onclick="closeEditModal()">' +
+          'Cancel' +
+        '</button>' +
+
+        '<button ' +
+          'class="save-button" ' +
+          'id="editSaveButton">' +
+          'Save' +
+        '</button>' +
+
+      '</div>' +
+
+    '</div>';
+
+
+  modal
+    .classList
+    .remove('hidden');
+
+
+  document
+    .getElementById(
+      'editSaveButton'
+    )
+    .onclick =
+    saveFunction;
+
+}
+
+
+function closeEditModal() {
+
+  const modal =
+    document.getElementById(
+      'editModal'
+    );
+
+
+  if (modal) {
+
+    modal
+      .classList
+      .add('hidden');
+
+  }
+
+}
+
+/*************************************************
+ * SAVE CUSTOMER
+ *************************************************/
+
+function saveCustomer() {
+
+  const companyId =
+    document.getElementById(
+      'editCompanyId'
+    ).value.trim();
+
+
+  const data = {
+
+    customerName:
+      document.getElementById(
+        'editCustomerName'
+      ).value.trim(),
+
+    industrialArea:
+      document.getElementById(
+        'editIndustrialArea'
+      ).value.trim(),
+
+    industrialHub:
+      document.getElementById(
+        'editIndustrialHub'
+      ).value.trim(),
+
+    city:
+      document.getElementById(
+        'editCity'
+      ).value.trim(),
+
+    type:
+      document.getElementById(
+        'editType'
+      ).value.trim(),
+
+    status:
+      document.getElementById(
+        'editStatus'
+      ).value.trim(),
+
+    potential:
+      document.getElementById(
+        'editPotential'
+      ).value.trim(),
+
+    website:
+      document.getElementById(
+        'editWebsite'
+      ).value.trim(),
+
+    notes:
+      document.getElementById(
+        'editNotes'
+      ).value.trim()
+
+  };
+
+
+  const button =
+    document.getElementById(
+      'editSaveButton'
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function() {
+
+        closeEditModal();
+
+        refreshCustomerDetails();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Save';
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .updateCustomerRecord(
+      companyId,
+      data
+    );
+
+}
+
+/*************************************************
+ * ADD / EDIT PERSON
+ *************************************************/
+
+function openPersonEdit(
+  peopleId
+) {
+
+  if (peopleId) {
+
+    loadPersonForEdit(
+      peopleId
+    );
+
+    return;
+
+  }
+
+
+  showPersonEditForm(
+    null
+  );
+
+}
+
+function loadPersonForEdit(
+  peopleId
+) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(person) {
+
+        showPersonEditForm(
+          person
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .getPersonById(
+      peopleId
+    );
+
+}
+
+function showPersonEditForm(
+  person
+) {
+
+  person =
+    person || {};
+
+
+  const peopleId =
+    getField(
+      person,
+      [
+        'peopleId',
+        'People ID'
+      ]
+    );
+
+
+  const companyId =
+    getField(
+      activeCustomer,
+      [
+        'companyId',
+        'Company ID'
+      ]
+    );
+
+
+  const name =
+    getField(
+      person,
+      [
+        'name',
+        'Name'
+      ]
+    );
+
+
+  const designation =
+    getField(
+      person,
+      [
+        'designation',
+        'Designation'
+      ]
+    );
+
+
+  const phone =
+    getField(
+      person,
+      [
+        'phone',
+        'Phone'
+      ]
+    );
+
+
+  const email =
+    getField(
+      person,
+      [
+        'email',
+        'Email'
+      ]
+    );
+
+
+  const photo =
+    getField(
+      person,
+      [
+        'photo',
+        'Photo'
+      ]
+    );
+
+
+  openEditModal(
+
+    peopleId
+      ? 'Edit Contact'
+      : 'Add Contact',
+
+    '<input type="hidden" ' +
+      'id="editPeopleId" ' +
+      'value="' +
+      escapeAttribute(peopleId) +
+      '">'
+
+    +
+
+    '<div class="edit-field">' +
+      '<label>Company ID</label>' +
+      '<input value="' +
+        escapeAttribute(companyId) +
+        '" readonly>' +
+    '</div>'
+
+    +
+
+    '<div class="edit-field">' +
+      '<label>Name</label>' +
+      '<input id="editPersonName" ' +
+        'value="' +
+        escapeAttribute(name) +
+        '">' +
+    '</div>'
+
+    +
+
+    '<div class="edit-field">' +
+      '<label>Designation</label>' +
+      '<input id="editPersonDesignation" ' +
+        'value="' +
+        escapeAttribute(designation) +
+        '">' +
+    '</div>'
+
+    +
+
+    '<div class="edit-field">' +
+      '<label>Phone</label>' +
+      '<input id="editPersonPhone" ' +
+        'value="' +
+        escapeAttribute(phone) +
+        '">' +
+    '</div>'
+
+    +
+
+    '<div class="edit-field">' +
+      '<label>Email</label>' +
+      '<input id="editPersonEmail" ' +
+        'value="' +
+        escapeAttribute(email) +
+        '">' +
+    '</div>'
+
+    +
+
+    '<div class="edit-field">' +
+      '<label>Visiting Card</label>' +
+      '<input id="editPersonPhoto" ' +
+        'value="' +
+        escapeAttribute(photo) +
+        '">' +
+    '</div>',
+
+    savePerson
+
+  );
+
+}
+
+function savePerson() {
+
+  const peopleId =
+    document.getElementById(
+      'editPeopleId'
+    ).value.trim();
+
+
+  const companyId =
+    getField(
+      activeCustomer,
+      [
+        'companyId',
+        'Company ID'
+      ]
+    );
+
+
+  const data = {
+
+    name:
+      document.getElementById(
+        'editPersonName'
+      ).value.trim(),
+
+    designation:
+      document.getElementById(
+        'editPersonDesignation'
+      ).value.trim(),
+
+    phone:
+      document.getElementById(
+        'editPersonPhone'
+      ).value.trim(),
+
+    email:
+      document.getElementById(
+        'editPersonEmail'
+      ).value.trim(),
+
+    photo:
+      document.getElementById(
+        'editPersonPhoto'
+      ).value.trim()
+
+  };
+
+
+  const button =
+    document.getElementById(
+      'editSaveButton'
+    );
+
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function() {
+
+        closeEditModal();
+
+        renderCustomerDetail();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Save';
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .savePersonRecord(
+      peopleId,
+      companyId,
+      data
+    );
 
 }
 

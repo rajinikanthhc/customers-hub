@@ -789,4 +789,348 @@ body {
 
 }
 
+.detail-header-row {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+  gap: 10px;
+
+}
+
+
+.edit-icon-button {
+
+  width: 32px;
+
+  height: 32px;
+
+  flex-shrink: 0;
+
+  border: 1px solid #dadce0;
+
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  color: #188038;
+
+  font-size: 18px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+}
+
+
+.edit-icon-button:hover {
+
+  background: #f1f8f4;
+
+  border-color: #188038;
+
+}
+
+.detail-header-row {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: flex-start;
+
+}
+
+
+.edit-icon-button,
+.person-edit-button {
+
+  width: 30px;
+
+  height: 30px;
+
+  border: 1px solid #dadce0;
+
+  border-radius: 6px;
+
+  background: #fff;
+
+  color: #188038;
+
+  font-size: 17px;
+
+  cursor: pointer;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+}
+
+
+.edit-icon-button:hover,
+.person-edit-button:hover {
+
+  background: #f1f8f4;
+
+}
+
+
+.person-header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+}
+
+
+.add-contact-button {
+
+  margin-top: 12px;
+
+  padding: 8px 14px;
+
+  border: 1px solid #188038;
+
+  border-radius: 6px;
+
+  background: #fff;
+
+  color: #188038;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+}
+
+
+.add-contact-button:hover {
+
+  background: #f1f8f4;
+
+}
+
+
+.edit-modal {
+
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  background: rgba(0,0,0,.35);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+}
+
+
+.edit-modal.hidden {
+
+  display: none;
+
+}
+
+
+.edit-modal-box {
+
+  width: 440px;
+
+  max-width: calc(100vw - 30px);
+
+  max-height: calc(100vh - 40px);
+
+  background: white;
+
+  border-radius: 10px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.25);
+
+}
+
+
+.edit-modal-header {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  padding: 14px 18px;
+
+  border-bottom: 1px solid #e5e7eb;
+
+}
+
+
+.edit-modal-title {
+
+  font-size: 16px;
+
+  font-weight: 600;
+
+}
+
+
+.modal-close {
+
+  border: 0;
+
+  background: transparent;
+
+  font-size: 24px;
+
+  cursor: pointer;
+
+}
+
+
+.edit-modal-body {
+
+  padding: 18px;
+
+  max-height: 65vh;
+
+  overflow-y: auto;
+
+}
+
+
+.edit-field {
+
+  margin-bottom: 13px;
+
+}
+
+
+.edit-field label {
+
+  display: block;
+
+  margin-bottom: 5px;
+
+  font-size: 11px;
+
+  color: #5f6368;
+
+  font-weight: 500;
+
+}
+
+
+.edit-field input,
+.edit-field textarea {
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 9px 10px;
+
+  border: 1px solid #dadce0;
+
+  border-radius: 5px;
+
+  font-family: Roboto, Arial, sans-serif;
+
+  font-size: 13px;
+
+}
+
+
+.edit-field textarea {
+
+  min-height: 70px;
+
+  resize: vertical;
+
+}
+
+
+.edit-modal-footer {
+
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 8px;
+
+  padding: 12px 18px;
+
+  border-top: 1px solid #e5e7eb;
+
+}
+
+
+.cancel-button,
+.save-button {
+
+  padding: 8px 16px;
+
+  border-radius: 5px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+
+}
+
+
+.cancel-button {
+
+  border: 1px solid #dadce0;
+
+  background: white;
+
+}
+
+
+.save-button {
+
+  border: 1px solid #188038;
+
+  background: #188038;
+
+  color: white;
+
+}
+
+
+.no-contacts {
+
+  text-align: center;
+
+  padding: 15px;
+
+  color: #5f6368;
+
+  font-size: 12px;
+
+}
+
 </style>

@@ -870,3 +870,493 @@ function getSpreadsheetUrl() {
     .getUrl();
 
 }
+
+function updateCustomerRecord(companyId, data) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Customers');
+
+  if (!sheet) {
+    throw new Error(
+      'Customers sheet not found.'
+    );
+  }
+
+
+  const values =
+    sheet.getDataRange().getValues();
+
+  const headers =
+    values[0].map(function(h) {
+
+      return String(h)
+        .trim()
+        .toLowerCase();
+
+    });
+
+
+  const idColumn =
+    headers.indexOf('company id');
+
+
+  if (idColumn === -1) {
+
+    throw new Error(
+      'Company ID column not found.'
+    );
+
+  }
+
+
+  let row = -1;
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    if (
+      String(
+        values[i][idColumn]
+      ).trim() ===
+      String(companyId).trim()
+    ) {
+
+      row = i + 1;
+
+      break;
+
+    }
+
+  }
+
+
+  if (row === -1) {
+
+    throw new Error(
+      'Customer not found.'
+    );
+
+  }
+
+
+  const fields = {
+
+    'customer name':
+      data.customerName,
+
+    'industrial area':
+      data.industrialArea,
+
+    'industrial hub':
+      data.industrialHub,
+
+    'city':
+      data.city,
+
+    'type':
+      data.type,
+
+    'status':
+      data.status,
+
+    'potential':
+      data.potential,
+
+    'website':
+      data.website,
+
+    'notes':
+      data.notes
+
+  };
+
+
+  Object.keys(fields)
+    .forEach(function(header) {
+
+      const column =
+        headers.indexOf(header);
+
+
+      if (column !== -1) {
+
+        sheet
+          .getRange(
+            row,
+            column + 1
+          )
+          .setValue(
+            fields[header]
+          );
+
+      }
+
+    });
+
+
+  return true;
+
+}
+
+function getCustomerById(companyId) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Customers');
+
+
+  const values =
+    sheet.getDataRange().getValues();
+
+
+  const headers =
+    values[0];
+
+
+  const idColumn =
+    headers.findIndex(function(h) {
+
+      return String(h)
+        .trim()
+        .toLowerCase() ===
+        'company id';
+
+    });
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    if (
+      String(
+        values[i][idColumn]
+      ).trim() ===
+      String(companyId).trim()
+    ) {
+
+      const obj = {};
+
+      headers.forEach(
+        function(header, index) {
+
+          obj[
+            String(header)
+              .trim()
+          ] =
+            values[i][index];
+
+        }
+      );
+
+      return obj;
+
+    }
+
+  }
+
+
+  return null;
+
+}
+
+function savePersonRecord(
+  peopleId,
+  companyId,
+  data
+) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('People');
+
+  if (!sheet) {
+
+    throw new Error(
+      'People sheet not found.'
+    );
+
+  }
+
+
+  const values =
+    sheet.getDataRange().getValues();
+
+
+  const headers =
+    values[0].map(function(h) {
+
+      return String(h)
+        .trim()
+        .toLowerCase();
+
+    });
+
+
+  const idColumn =
+    headers.indexOf(
+      'people id'
+    );
+
+
+  if (idColumn === -1) {
+
+    throw new Error(
+      'People ID column not found.'
+    );
+
+  }
+
+
+  let row = -1;
+
+
+  /*
+   * EDIT EXISTING PERSON
+   */
+
+  if (peopleId) {
+
+    for (
+      let i = 1;
+      i < values.length;
+      i++
+    ) {
+
+      if (
+        String(
+          values[i][idColumn]
+        ).trim() ===
+        String(peopleId).trim()
+      ) {
+
+        row = i + 1;
+
+        break;
+
+      }
+
+    }
+
+  }
+
+
+  /*
+   * ADD NEW PERSON
+   */
+
+  if (row === -1) {
+
+    row =
+      sheet.getLastRow() + 1;
+
+
+    peopleId =
+      generateNextPeopleId(
+        values,
+        idColumn
+      );
+
+
+    sheet
+      .getRange(
+        row,
+        idColumn + 1
+      )
+      .setValue(
+        peopleId
+      );
+
+
+    const companyColumn =
+      headers.indexOf(
+        'company id'
+      );
+
+
+    if (companyColumn !== -1) {
+
+      sheet
+        .getRange(
+          row,
+          companyColumn + 1
+        )
+        .setValue(
+          companyId
+        );
+
+    }
+
+  }
+
+
+  const fields = {
+
+    'name':
+      data.name,
+
+    'designation':
+      data.designation,
+
+    'phone':
+      data.phone,
+
+    'email':
+      data.email,
+
+    'photo':
+      data.photo
+
+  };
+
+
+  Object.keys(fields)
+    .forEach(function(header) {
+
+      const column =
+        headers.indexOf(header);
+
+
+      if (column !== -1) {
+
+        sheet
+          .getRange(
+            row,
+            column + 1
+          )
+          .setValue(
+            fields[header]
+          );
+
+      }
+
+    });
+
+
+  return true;
+
+}
+
+function generateNextPeopleId(
+  values,
+  idColumn
+) {
+
+  let max = 0;
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const value =
+      String(
+        values[i][idColumn] || ''
+      ).trim();
+
+
+    const match =
+      value.match(
+        /^P(\d+)$/i
+      );
+
+
+    if (match) {
+
+      max =
+        Math.max(
+          max,
+          Number(match[1])
+        );
+
+    }
+
+  }
+
+
+  return 'P' +
+    String(
+      max + 1
+    ).padStart(4, '0');
+
+}
+
+function getPersonById(peopleId) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('People');
+
+
+  const values =
+    sheet.getDataRange().getValues();
+
+
+  const headers =
+    values[0];
+
+
+  const idColumn =
+    headers.findIndex(function(h) {
+
+      return String(h)
+        .trim()
+        .toLowerCase() ===
+        'people id';
+
+    });
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    if (
+      String(
+        values[i][idColumn]
+      ).trim() ===
+      String(peopleId).trim()
+    ) {
+
+      const obj = {};
+
+      headers.forEach(
+        function(header, index) {
+
+          obj[
+            String(header).trim()
+          ] =
+            values[i][index];
+
+        }
+      );
+
+      return obj;
+
+    }
+
+  }
+
+
+  return null;
+
+}
