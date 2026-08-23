@@ -1000,37 +1000,32 @@ function renderCustomerDetail() {
    * Customer information
    */
 
-  html +=
-    '<div class="customer-info">';
-
-
-  html += customerInfoItem(
-    'Type',
-    type
-  );
-
-
-  html += customerInfoItem(
-    'Status',
-    status
-  );
-
-
-  html += customerInfoItem(
-    'Potential',
-    formatPotential(potential)
-  );
-
-
-  html += customerInfoItem(
-    'Notes',
-    notes
-  );
-
 
   html +=
-    '</div>';
 
+  '<div class="customer-info">' +
+
+    customerInfoItem(
+      'Type',
+      type
+    ) +
+
+    customerInfoItem(
+      'Status',
+      status
+    ) +
+
+    customerInfoItem(
+      'Potential',
+      formatPotential(potential)
+    ) +
+
+    customerInfoItem(
+      'Notes',
+      notes
+    ) +
+
+  '</div>';
 
   /*
    * Website
@@ -1092,10 +1087,7 @@ function renderCustomerDetail() {
  * GET FIELD
  *************************************************/
 
-function getField(
-  obj,
-  possibleNames
-) {
+function getField(obj, possibleNames) {
 
   if (!obj) {
     return '';
@@ -1117,7 +1109,8 @@ function getField(
         possibleNames[i]
       )
       .trim()
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/[\s_-]+/g, '');
 
 
     for (
@@ -1127,16 +1120,34 @@ function getField(
     ) {
 
       const actual =
-        String(
-          keys[j]
-        )
-        .trim()
-        .toLowerCase();
+        String(keys[j])
+          .trim()
+          .toLowerCase()
+          .replace(/[\s_-]+/g, '');
 
 
       if (actual === wanted) {
 
-        return obj[keys[j]];
+        const value =
+          obj[keys[j]];
+
+
+        /*
+         * Never display literal
+         * undefined / null.
+         */
+
+        if (
+          value === undefined ||
+          value === null
+        ) {
+
+          return '';
+
+        }
+
+
+        return value;
 
       }
 
@@ -1149,7 +1160,6 @@ function getField(
 
 }
 
-
 /*************************************************
  * CUSTOMER INFO ITEM
  *************************************************/
@@ -1159,7 +1169,7 @@ function customerInfoItem(
   value
 ) {
 
-  return
+  return (
 
     '<div class="customer-info-item">' +
 
@@ -1171,10 +1181,11 @@ function customerInfoItem(
         escapeHtml(value || '-') +
       '</div>' +
 
-    '</div>';
+    '</div>'
+
+  );
 
 }
-
 
 /*************************************************
  * FORMAT POTENTIAL
@@ -1437,48 +1448,56 @@ function renderPeople(
 
       if (phone) {
 
-        html +=
+  html +=
 
-          '<div class="person-row">' +
+    '<div class="person-row">' +
 
-            '<span class="contact-label">' +
-              'Phone' +
-            '</span>' +
+      '<span class="contact-label">' +
+        'Phone:' +
+      '</span>' +
 
-            '<a href="tel:' +
-              escapeAttribute(phone) +
-            '">' +
+      '<span class="contact-value">' +
 
-              escapeHtml(phone) +
+        '<a href="tel:' +
+          escapeAttribute(phone) +
+        '">' +
 
-            '</a>' +
+          escapeHtml(phone) +
 
-          '</div>';
+        '</a>' +
 
-      }
+      '</span>' +
+
+    '</div>';
+
+}
 
 
       if (email) {
 
-        html +=
+  html +=
 
-          '<div class="person-row">' +
+    '<div class="person-row">' +
 
-            '<span class="contact-label">' +
-              'Email' +
-            '</span>' +
+      '<span class="contact-label">' +
+        'Email:' +
+      '</span>' +
 
-            '<a href="mailto:' +
-              escapeAttribute(email) +
-            '">' +
+      '<span class="contact-value">' +
 
-              escapeHtml(email) +
+        '<a href="mailto:' +
+          escapeAttribute(email) +
+        '">' +
 
-            '</a>' +
+          escapeHtml(email) +
 
-          '</div>';
+        '</a>' +
 
-      }
+      '</span>' +
+
+    '</div>';
+
+}
 
 
       if (visitingCard) {
