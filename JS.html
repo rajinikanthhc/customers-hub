@@ -584,18 +584,20 @@ function loadCustomersByHub(
 
 
   const selectedHubName =
-    document.getElementById(
-      'selectedHubName'
-    );
+  document.getElementById(
+    'selectedHubName'
+  );
 
+if (selectedHubName) {
 
-  if (selectedHubName) {
+  selectedHubName.textContent =
+    hubName;
 
-    selectedHubName.textContent =
-      hubName;
+  addHubEditButton(
+    selectedHubName
+  );
 
-  }
-
+}
 
   const selectedHubCity =
     document.getElementById(
@@ -668,6 +670,536 @@ function loadCustomersByHub(
 
 }
 
+/*************************************************
+ * ADD HUB EDIT BUTTON
+ *************************************************/
+
+function addHubEditButton(selectedHubName) {
+
+  if (!selectedHubName) {
+    return;
+  }
+
+  const existing =
+    document.querySelector('.hub-edit-button');
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const button =
+    document.createElement('button');
+
+  button.type = 'button';
+
+  button.className =
+    'hub-edit-button';
+
+  button.title =
+    'Edit Industrial Hub';
+
+  button.textContent =
+    '✎';
+
+  button.style.cssText =
+    'margin-left:6px;' +
+    'width:24px;' +
+    'height:24px;' +
+    'border:1px solid #ddd;' +
+    'border-radius:5px;' +
+    'background:#fff;' +
+    'color:#198754;' +
+    'font-size:15px;' +
+    'cursor:pointer;' +
+    'padding:0;' +
+    'display:inline-flex;' +
+    'align-items:center;' +
+    'justify-content:center;' +
+    'vertical-align:middle;';
+
+  button.addEventListener(
+    'click',
+    function(event) {
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      openHubEdit();
+
+    }
+  );
+
+  /*
+   * Put pencil directly after
+   * the hub name.
+   */
+  selectedHubName.appendChild(button);
+
+}
+
+/*************************************************
+ * EDIT INDUSTRIAL HUB
+ *************************************************/
+
+function openHubEdit() {
+
+  if (!activeHub) {
+
+    alert(
+      'No Industrial Hub selected.'
+    );
+
+    return;
+
+  }
+
+
+  const industrialArea =
+    activeHub.industrialArea || '';
+
+
+  const industrialHub =
+    activeHub.hub || '';
+
+
+  const city =
+    activeHub.city || '';
+
+
+  const latitude =
+    activeHub.latitude ?? '';
+
+
+  const longitude =
+    activeHub.longitude ?? '';
+
+
+  let html = '';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Industrial Area</label>' +
+
+      '<input ' +
+        'id="editHubIndustrialArea" ' +
+        'value="' +
+          escapeAttribute(
+            industrialArea
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Industrial Hub</label>' +
+
+      '<input ' +
+        'id="editHubIndustrialHub" ' +
+        'value="' +
+          escapeAttribute(
+            industrialHub
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>City</label>' +
+
+      '<input ' +
+        'id="editHubCity" ' +
+        'value="' +
+          escapeAttribute(
+            city
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Latitude</label>' +
+
+      '<input ' +
+        'id="editHubLatitude" ' +
+        'type="number" ' +
+        'step="any" ' +
+        'value="' +
+          escapeAttribute(
+            latitude
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Longitude</label>' +
+
+      '<input ' +
+        'id="editHubLongitude" ' +
+        'type="number" ' +
+        'step="any" ' +
+        'value="' +
+          escapeAttribute(
+            longitude
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  openEditModal(
+
+    'Edit Industrial Hub',
+
+    html,
+
+    saveHub
+
+  );
+
+}
+
+/*************************************************
+ * SAVE INDUSTRIAL HUB
+ *************************************************/
+
+function saveHub() {
+
+  if (!activeHub) {
+
+    alert(
+      'No Industrial Hub selected.'
+    );
+
+    return;
+
+  }
+
+
+  const rowNumber =
+    activeHub.rowNumber;
+
+
+  const data = {
+
+    industrialArea:
+      document
+        .getElementById(
+          'editHubIndustrialArea'
+        )
+        .value
+        .trim(),
+
+    industrialHub:
+      document
+        .getElementById(
+          'editHubIndustrialHub'
+        )
+        .value
+        .trim(),
+
+    city:
+      document
+        .getElementById(
+          'editHubCity'
+        )
+        .value
+        .trim(),
+
+    latitude:
+      document
+        .getElementById(
+          'editHubLatitude'
+        )
+        .value
+        .trim(),
+
+    longitude:
+      document
+        .getElementById(
+          'editHubLongitude'
+        )
+        .value
+        .trim()
+
+  };
+
+
+  if (!data.industrialHub) {
+
+    alert(
+      'Industrial Hub is required.'
+    );
+
+    return;
+
+  }
+
+
+  if (!data.city) {
+
+    alert(
+      'City is required.'
+    );
+
+    return;
+
+  }
+
+
+  if (
+    data.latitude === '' ||
+    isNaN(Number(data.latitude))
+  ) {
+
+    alert(
+      'Please enter a valid Latitude.'
+    );
+
+    return;
+
+  }
+
+
+  if (
+    data.longitude === '' ||
+    isNaN(Number(data.longitude))
+  ) {
+
+    alert(
+      'Please enter a valid Longitude.'
+    );
+
+    return;
+
+  }
+
+
+  const button =
+    document.getElementById(
+      'editSaveButton'
+    );
+
+
+  if (button) {
+
+    button.disabled =
+      true;
+
+    button.textContent =
+      'Saving...';
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function () {
+
+        /*
+         * Update local hub immediately.
+         */
+
+        const oldHubName =
+  activeHub.hub;
+
+
+activeHub.industrialArea =
+  data.industrialArea;
+
+activeHub.hub =
+  data.industrialHub;
+
+activeHub.city =
+  data.city;
+
+activeHub.latitude =
+  Number(
+    data.latitude
+  );
+
+activeHub.longitude =
+  Number(
+    data.longitude
+  );
+
+
+/*
+ * Keep hubs[] synchronized.
+ */
+
+const hubArrayIndex =
+  hubs.findIndex(
+    function(hub) {
+
+      return hub === activeHub ||
+        (
+          String(hub.hub || '')
+            .trim()
+            .toLowerCase() ===
+          String(oldHubName || '')
+            .trim()
+            .toLowerCase()
+        );
+
+    }
+  );
+
+
+if (
+  hubArrayIndex !== -1
+) {
+
+  hubs[hubArrayIndex] =
+    activeHub;
+
+  activeHubIndex =
+    hubArrayIndex;
+
+}
+
+
+        /*
+         * Close modal.
+         */
+
+        closeEditModal();
+
+
+        /*
+         * Update header.
+         */
+
+        const selectedHubName =
+          document.getElementById(
+            'selectedHubName'
+          );
+
+        if (selectedHubName) {
+
+          selectedHubName.textContent =
+            activeHub.hub;
+
+          addHubEditButton(
+            selectedHubName
+          );
+
+        }
+
+
+        /*
+         * Update city/count line.
+         */
+
+        const selectedHubCity =
+          document.getElementById(
+            'selectedHubCity'
+          );
+
+        if (selectedHubCity) {
+
+          selectedHubCity.textContent =
+            activeHub.city +
+            ' · ' +
+            customers.length +
+            ' Customers';
+
+        }
+
+
+        /*
+         * Refresh map markers.
+         */
+
+        renderHubMarkers();
+
+        /*
+         * Re-select the updated hub
+         * so the customer list remains open.
+         */
+
+        const newIndex =
+          hubs.findIndex(
+            function(hub) {
+
+              return String(
+                hub.hub || ''
+              )
+              .trim()
+              .toLowerCase() ===
+
+              String(
+                activeHub.hub || ''
+              )
+              .trim()
+              .toLowerCase();
+
+            }
+          );
+
+
+        if (
+          newIndex !== -1
+        ) {
+
+          activeHubIndex =
+            newIndex;
+
+          activeHub =
+            hubs[newIndex];
+
+        }
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        if (button) {
+
+          button.disabled =
+            false;
+
+          button.textContent =
+            'Save';
+
+        }
+
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .updateAreaRecord(
+      rowNumber,
+      data
+    );
+
+}
 
 /*************************************************
  * RENDER CUSTOMER LIST

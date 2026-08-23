@@ -212,13 +212,21 @@ function getIndustrialHubs() {
       ]
     );
 
+    const industrialAreaIndex =
+  findHeader(
+    headers,
+    [
+      'industrial area',
+      'industrialarea'
+    ]
+  );
 
   if (
-    hubIndex === -1 ||
-    cityIndex === -1 ||
-    latitudeIndex === -1 ||
-    longitudeIndex === -1
-  ) {
+  hubIndex === -1 ||
+  cityIndex === -1 ||
+  latitudeIndex === -1 ||
+  longitudeIndex === -1
+) {
 
     throw new Error(
       'Areas sheet must contain Industrial Hub, City, Latitude and Longitude columns.'
@@ -278,19 +286,28 @@ function getIndustrialHubs() {
 
     if (!hubs[key]) {
 
-      hubs[key] = {
+  hubs[key] = {
 
-        hub: hub,
+    hub: hub,
 
-        city: city,
+    industrialArea:
+      industrialAreaIndex !== -1
+        ? String(
+            row[industrialAreaIndex] || ''
+          ).trim()
+        : '',
 
-        latitude: latitude,
+    city: city,
 
-        longitude: longitude
+    latitude: latitude,
 
-      };
+    longitude: longitude,
 
-    }
+    rowNumber: i + 1
+
+  };
+
+}
 
   }
 
@@ -3751,5 +3768,145 @@ function deleteSettingValue(
   throw new Error(
     'Value not found: ' + cleanValue
   );
+
+}
+
+/*************************************************
+ * UPDATE INDUSTRIAL HUB / AREA
+ *************************************************/
+
+function updateAreaRecord(
+  rowNumber,
+  data
+) {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      AREAS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Areas sheet not found.'
+    );
+
+  }
+
+  const row =
+    Number(rowNumber);
+
+  if (
+    !row ||
+    row < 2 ||
+    row > sheet.getLastRow()
+  ) {
+
+    throw new Error(
+      'Invalid Areas sheet row.'
+    );
+
+  }
+
+  if (!data) {
+
+    throw new Error(
+      'Area data is required.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  const headers =
+    values[0].map(
+      normalizeHeader
+    );
+
+
+  const fields = {
+
+    'industrial area':
+      data.industrialArea,
+
+    'industrial hub':
+      data.industrialHub,
+
+    'city':
+      data.city,
+
+    'latitude':
+      data.latitude,
+
+    'longitude':
+      data.longitude
+
+  };
+
+
+  Object.keys(fields)
+    .forEach(function(header) {
+
+      const column =
+        headers.indexOf(
+          header
+        );
+
+      if (
+        column === -1
+      ) {
+
+        return;
+
+      }
+
+      let value =
+        fields[header];
+
+      /*
+       * Store coordinates as numbers.
+       */
+
+      if (
+        header === 'latitude' ||
+        header === 'longitude'
+      ) {
+
+        value =
+          Number(value);
+
+        if (
+          isNaN(value)
+        ) {
+
+          throw new Error(
+            'Invalid ' +
+            header +
+            '.'
+          );
+
+        }
+
+      }
+
+      sheet
+        .getRange(
+          row,
+          column + 1
+        )
+        .setValue(
+          value
+        );
+
+    });
+
+
+  return true;
 
 }
