@@ -54,10 +54,16 @@ function bindEvents() {
     document.getElementById('backToCustomers');
 
   if (backToCustomers) {
-    backToCustomers.addEventListener(
-      'click',
-      showCustomerView
-    );
+backToCustomers.addEventListener(
+  'click',
+  function () {
+
+    showCustomerView();
+
+    restoreUniversalSearch();
+
+  }
+);
   }
 
 
@@ -81,8 +87,6 @@ function bindEvents() {
       resetHomeView
     );
   }
-
-  setupUniversalSearch(); 
 
 }
 
@@ -1705,6 +1709,8 @@ function closeCustomerPanel() {
 
 
   activeCustomer = null;
+
+restoreUniversalSearch();
 
 }
 
@@ -4441,17 +4447,17 @@ function renderUniversalSearchResults(
 
 
       button.addEventListener(
-        'click',
-        function () {
+  'click',
+  function () {
 
-          clearUniversalSearch();
+    hideUniversalSearchResults();
 
-          openUniversalSearchResult(
-            item
-          );
+    openUniversalSearchResult(
+      item
+    );
 
-        }
-      );
+  }
+);
 
 
       results.appendChild(
@@ -4468,6 +4474,72 @@ function renderUniversalSearchResults(
 
 }
 
+/*************************************************
+ * HIDE SEARCH RESULTS ONLY
+ *************************************************/
+
+function hideUniversalSearchResults() {
+
+  const results =
+    document.getElementById(
+      'universalSearchResults'
+    );
+
+  if (results) {
+
+    results.classList.add(
+      'hidden'
+    );
+
+  }
+
+}
+
+/*************************************************
+ * RESTORE UNIVERSAL SEARCH
+ *************************************************/
+
+function restoreUniversalSearch() {
+
+  const input =
+    document.getElementById(
+      'universalSearch'
+    );
+
+  if (!input) {
+    return;
+  }
+
+  const query =
+    input.value.trim();
+
+  if (!query) {
+    return;
+  }
+
+  const clear =
+    document.getElementById(
+      'universalSearchClear'
+    );
+
+  if (clear) {
+
+    clear.classList.remove(
+      'hidden'
+    );
+
+  }
+
+  /*
+   * Search again using the existing
+   * text in the search box.
+   */
+
+  performUniversalSearch(
+    query
+  );
+
+}
 
 /*************************************************
  * CLEAR SEARCH
