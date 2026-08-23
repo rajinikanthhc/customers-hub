@@ -7,26 +7,23 @@
 let map = null;
 
 let hubs = [];
-
 let customers = [];
-
 let markers = [];
 
 let activeHubIndex = -1;
-
 let activeHub = null;
-
 let activeCustomer = null;
+
+let settingsOptions = null;
 
 
 /*************************************************
- * START
+ * START APPLICATION
  *************************************************/
 
 window.addEventListener('load', function () {
 
   bindEvents();
-
   loadApplication();
 
 });
@@ -38,34 +35,48 @@ window.addEventListener('load', function () {
 
 function bindEvents() {
 
-  document
-    .getElementById('backToHubs')
-    .addEventListener(
+  const backToHubs =
+    document.getElementById('backToHubs');
+
+  if (backToHubs) {
+    backToHubs.addEventListener(
       'click',
       closeCustomerPanel
     );
+  }
 
 
-  document
-    .getElementById('backToCustomers')
-    .addEventListener(
+  const backToCustomers =
+    document.getElementById('backToCustomers');
+
+  if (backToCustomers) {
+    backToCustomers.addEventListener(
       'click',
       showCustomerView
     );
+  }
 
-    document
-    .getElementById('openSheetButton')
-    .addEventListener(
+
+  const openSheetButton =
+    document.getElementById('openSheetButton');
+
+  if (openSheetButton) {
+    openSheetButton.addEventListener(
       'click',
       openSheet
     );
+  }
 
-    document
-  .getElementById('homeButton')
-  .addEventListener(
-    'click',
-    resetHomeView
-  );
+
+  const homeButton =
+    document.getElementById('homeButton');
+
+  if (homeButton) {
+    homeButton.addEventListener(
+      'click',
+      resetHomeView
+    );
+  }
 
 }
 
@@ -77,7 +88,6 @@ function bindEvents() {
 function loadApplication() {
 
   showLoading(true);
-
   hideError();
 
 
@@ -134,7 +144,6 @@ function loadGoogleMaps(apiKey) {
   ) {
 
     initializeMap();
-
     return;
 
   }
@@ -152,11 +161,6 @@ function loadGoogleMaps(apiKey) {
     document.createElement('script');
 
 
-  /*
-   * IMPORTANT:
-   * No libraries=marker.
-   */
-
   script.src =
     'https://maps.googleapis.com/maps/api/js' +
     '?key=' +
@@ -165,7 +169,6 @@ function loadGoogleMaps(apiKey) {
 
 
   script.async = true;
-
   script.defer = true;
 
 
@@ -203,105 +206,67 @@ function initializeMap() {
           lng: 77.5946
         },
 
-        zoom: 7,
-
-
-        /*
-         * SALES TERRITORY MAP
-         *
-         * Keep geography:
-         * - roads
-         * - boundaries
-         * - water
-         * - land
-         *
-         * Hide Google text labels.
-         */
+        zoom: 11,
 
         styles: [
 
           {
             featureType: 'all',
-
             elementType: 'labels',
-
             stylers: [
               {
                 visibility: 'off'
               }
             ]
-
           },
-
 
           {
             featureType: 'road',
-
             elementType: 'geometry',
-
             stylers: [
               {
                 visibility: 'on'
               }
             ]
-
           },
-
 
           {
             featureType: 'administrative',
-
             elementType: 'geometry',
-
             stylers: [
               {
                 visibility: 'on'
               }
             ]
-
           },
-
 
           {
             featureType: 'landscape',
-
             elementType: 'geometry',
-
             stylers: [
               {
                 visibility: 'on'
               }
             ]
-
           },
-
 
           {
             featureType: 'water',
-
             elementType: 'geometry',
-
             stylers: [
               {
                 visibility: 'on'
               }
             ]
-
           }
 
         ],
 
-
         mapTypeControl: false,
-
         streetViewControl: false,
-
         fullscreenControl: false,
-
         zoomControl: true,
-
         clickableIcons: false,
-
         gestureHandling: 'greedy'
 
       }
@@ -314,10 +279,14 @@ function initializeMap() {
 
 
 /*************************************************
- * LOAD HUBS
+ * LOAD INDUSTRIAL HUBS
  *************************************************/
 
 function loadHubs() {
+
+  showLoading(true);
+  hideError();
+
 
   google.script.run
 
@@ -326,14 +295,16 @@ function loadHubs() {
       hubs = data || [];
 
 
-      document
-        .getElementById('hubCount')
-        .textContent =
-        hubs.length;
+      const count =
+        document.getElementById('hubCount');
+
+      if (count) {
+        count.textContent =
+          hubs.length;
+      }
 
 
       renderHubMarkers();
-
 
       showLoading(false);
 
@@ -355,17 +326,10 @@ function loadHubs() {
 
 
 /*************************************************
- * RENDER HUB MARKERS
- *
- * NO BULLET
- * BLACK GOOGLE-LIKE TEXT
+ * RENDER INDUSTRIAL HUB MARKERS
  *************************************************/
 
 function renderHubMarkers() {
-
-  /*
-   * Remove existing markers
-   */
 
   markers.forEach(function (marker) {
 
@@ -377,14 +341,8 @@ function renderHubMarkers() {
 
 
   if (!hubs.length) {
-
     return;
-
   }
-
-
-  const bounds =
-    new google.maps.LatLngBounds();
 
 
   hubs.forEach(function (hub, index) {
@@ -397,13 +355,6 @@ function renderHubMarkers() {
 
     };
 
-
-    /*
-     * Estimate the text width.
-     *
-     * This keeps the clickable area
-     * close to the actual hub name.
-     */
 
     const name =
       String(hub.hub || '');
@@ -423,9 +374,8 @@ function renderHubMarkers() {
 
 
     /*
-     * Transparent SVG.
-     *
-     * No visible bullet.
+     * Transparent clickable area.
+     * Only text is visible.
      */
 
     const svg =
@@ -465,13 +415,6 @@ function renderHubMarkers() {
     };
 
 
-    /*
-     * Standard Google Maps marker.
-     *
-     * Small clickable area matching
-     * approximately the hub name.
-     */
-
     const marker =
       new google.maps.Marker({
 
@@ -500,14 +443,11 @@ function renderHubMarkers() {
 
         clickable: true,
 
-        zIndex: 1000 + index
+        zIndex:
+          1000 + index
 
       });
 
-
-    /*
-     * Click exactly this hub.
-     */
 
     marker.addListener(
       'click',
@@ -521,30 +461,27 @@ function renderHubMarkers() {
 
     markers.push(marker);
 
-    bounds.extend(position);
-
   });
 
 
   /*
- * Initial map view
- *
- * Start around Central Bengaluru
- * instead of showing all 47 hubs.
- */
+   * Initial view:
+   * Central Bengaluru
+   */
 
-map.setCenter({
+  map.setCenter({
 
-  lat: 12.9716,
+    lat: 12.9716,
 
-  lng: 77.5946
+    lng: 77.5946
 
-});
+  });
 
 
-map.setZoom(11);
+  map.setZoom(11);
 
 }
+
 
 /*************************************************
  * SELECT INDUSTRIAL HUB
@@ -556,45 +493,39 @@ function selectHub(index) {
     index < 0 ||
     index >= hubs.length
   ) {
-
     return;
-
   }
 
 
   activeHubIndex =
     index;
 
-
   activeHub =
     hubs[index];
 
 
   /*
-   * Move map to hub.
+   * Move map to selected hub.
    */
 
-  map.panTo({
+  if (map) {
 
-    lat:
-      Number(
-        activeHub.latitude
-      ),
+    map.panTo({
 
-    lng:
-      Number(
-        activeHub.longitude
-      )
+      lat:
+        Number(
+          activeHub.latitude
+        ),
 
-  });
+      lng:
+        Number(
+          activeHub.longitude
+        )
 
+    });
 
-  map.setZoom(11);
+  }
 
-
-  /*
-   * Load customers.
-   */
 
   loadCustomersByHub(
     activeHub.hub
@@ -604,7 +535,7 @@ function selectHub(index) {
 
 
 /*************************************************
- * LOAD CUSTOMERS
+ * LOAD CUSTOMERS BY HUB
  *************************************************/
 
 function loadCustomersByHub(
@@ -626,30 +557,50 @@ function loadCustomersByHub(
     );
 
 
-  loading.classList.remove(
-    'hidden'
-  );
+  if (loading) {
+
+    loading.classList.remove(
+      'hidden'
+    );
+
+  }
 
 
-  list.innerHTML = '';
+  if (list) {
+
+    list.innerHTML = '';
+
+  }
 
 
-  document
-    .getElementById(
+  const selectedHubName =
+    document.getElementById(
       'selectedHubName'
-    )
-    .textContent =
-    hubName;
+    );
 
 
-  document
-    .getElementById(
+  if (selectedHubName) {
+
+    selectedHubName.textContent =
+      hubName;
+
+  }
+
+
+  const selectedHubCity =
+    document.getElementById(
       'selectedHubCity'
-    )
-    .textContent =
-    activeHub
-      ? activeHub.city
-      : '';
+    );
+
+
+  if (selectedHubCity) {
+
+    selectedHubCity.textContent =
+      activeHub
+        ? activeHub.city
+        : '';
+
+  }
 
 
   google.script.run
@@ -661,9 +612,13 @@ function loadCustomersByHub(
           data || [];
 
 
-        loading.classList.add(
-          'hidden'
-        );
+        if (loading) {
+
+          loading.classList.add(
+            'hidden'
+          );
+
+        }
 
 
         renderCustomerList();
@@ -674,17 +629,25 @@ function loadCustomersByHub(
     .withFailureHandler(
       function (error) {
 
-        loading.classList.add(
-          'hidden'
-        );
+        if (loading) {
+
+          loading.classList.add(
+            'hidden'
+          );
+
+        }
 
 
-        list.innerHTML =
-          '<div class="loading">' +
-          escapeHtml(
-            getErrorMessage(error)
-          ) +
-          '</div>';
+        if (list) {
+
+          list.innerHTML =
+            '<div class="loading">' +
+              escapeHtml(
+                getErrorMessage(error)
+              ) +
+            '</div>';
+
+        }
 
       }
     )
@@ -697,7 +660,7 @@ function loadCustomersByHub(
 
 
 /*************************************************
- * RENDER CUSTOMERS
+ * RENDER CUSTOMER LIST
  *************************************************/
 
 function renderCustomerList() {
@@ -708,26 +671,42 @@ function renderCustomerList() {
     );
 
 
+  if (!list) {
+    return;
+  }
+
+
   list.innerHTML = '';
 
-    /*
-   * Show customer count for selected hub
-   */
 
-  document.getElementById(
-    'selectedHubCity'
-  ).textContent =
-    (activeHub ? activeHub.city : '') +
-    ' · ' +
-    customers.length +
-    ' Customers';
+  const selectedHubCity =
+    document.getElementById(
+      'selectedHubCity'
+    );
+
+
+  if (selectedHubCity) {
+
+    selectedHubCity.textContent =
+
+      (activeHub
+        ? activeHub.city
+        : '') +
+
+      ' · ' +
+
+      customers.length +
+
+      ' Customers';
+
+  }
 
 
   if (!customers.length) {
 
     list.innerHTML =
       '<div class="loading">' +
-      'No customers found in this Industrial Hub.' +
+        'No customers found in this Industrial Hub.' +
       '</div>';
 
     return;
@@ -751,12 +730,44 @@ function renderCustomerList() {
         'customer-item';
 
 
+      const customerName =
+        getField(
+          customer,
+          [
+            'customerName',
+            'Customer Name',
+            'Company',
+            'company'
+          ]
+        );
+
+
+      const industrialArea =
+        getField(
+          customer,
+          [
+            'industrialArea',
+            'Industrial Area'
+          ]
+        );
+
+
+      const city =
+        getField(
+          customer,
+          [
+            'city',
+            'City'
+          ]
+        );
+
+
       item.innerHTML =
 
         '<div class="customer-name">' +
 
           escapeHtml(
-            customer.customerName
+            customerName || '-'
           ) +
 
         '</div>' +
@@ -766,8 +777,7 @@ function renderCustomerList() {
           'Industrial Area: ' +
 
           escapeHtml(
-            customer.industrialArea ||
-            '-'
+            industrialArea || '-'
           ) +
 
         '</div>' +
@@ -775,7 +785,7 @@ function renderCustomerList() {
         '<div class="customer-city">' +
 
           escapeHtml(
-            customer.city || ''
+            city || ''
           ) +
 
         '</div>';
@@ -791,9 +801,7 @@ function renderCustomerList() {
       );
 
 
-      list.appendChild(
-        item
-      );
+      list.appendChild(item);
 
     }
   );
@@ -811,9 +819,7 @@ function selectCustomer(index) {
     index < 0 ||
     index >= customers.length
   ) {
-
     return;
-
   }
 
 
@@ -823,15 +829,10 @@ function selectCustomer(index) {
 
   renderCustomerDetail();
 
-
   showDetailView();
 
 
-  /*
-   * Keep map at selected hub.
-   */
-
-  if (activeHub) {
+  if (activeHub && map) {
 
     map.panTo({
 
@@ -853,15 +854,24 @@ function selectCustomer(index) {
 
 
 /*************************************************
- * CUSTOMER DETAILS
+ * RENDER CUSTOMER DETAILS
  *************************************************/
 
 function renderCustomerDetail() {
 
-  const customer = activeCustomer;
+  const customer =
+    activeCustomer;
+
 
   const detail =
-    document.getElementById('customerDetail');
+    document.getElementById(
+      'customerDetail'
+    );
+
+
+  if (!detail) {
+    return;
+  }
 
 
   if (!customer) {
@@ -873,108 +883,122 @@ function renderCustomerDetail() {
   }
 
 
-  /*
-   * Read customer fields
-   */
-
   const companyId =
-    getField(customer, [
-      'companyId',
-      'Company ID',
-      'company_id'
-    ]);
+    getField(
+      customer,
+      [
+        'companyId',
+        'Company ID',
+        'company_id'
+      ]
+    );
 
 
   const customerName =
-    getField(customer, [
-      'customerName',
-      'Customer Name',
-      'customer_name',
-      'Company',
-      'company'
-    ]);
+    getField(
+      customer,
+      [
+        'customerName',
+        'Customer Name',
+        'customer_name',
+        'Company',
+        'company'
+      ]
+    );
 
 
   const type =
-    getField(customer, [
-      'type',
-      'Type'
-    ]);
+    getField(
+      customer,
+      [
+        'type',
+        'Type'
+      ]
+    );
 
 
   const status =
-    getField(customer, [
-      'status',
-      'Status'
-    ]);
+    getField(
+      customer,
+      [
+        'status',
+        'Status'
+      ]
+    );
 
 
   const potential =
-    getField(customer, [
-      'potential',
-      'Potential'
-    ]);
+    getField(
+      customer,
+      [
+        'potential',
+        'Potential'
+      ]
+    );
 
 
   const notes =
-    getField(customer, [
-      'notes',
-      'Notes'
-    ]);
+    getField(
+      customer,
+      [
+        'notes',
+        'Notes'
+      ]
+    );
 
 
   const website =
-    getField(customer, [
-      'website',
-      'Website'
-    ]);
+    getField(
+      customer,
+      [
+        'website',
+        'Website'
+      ]
+    );
 
 
   let html = '';
 
 
-  /**********************************************
-   * CUSTOMER NAME
-   **********************************************/
+  /*
+   * Header
+   */
 
-  /**********************************************
- * CUSTOMER NAME
- **********************************************/
+  html +=
 
-html +=
-  '<div class="detail-header-row">' +
+    '<div class="detail-header-row">' +
 
-    '<div>' +
+      '<div>' +
 
-      '<div class="detail-company-name">' +
-        escapeHtml(
-          customerName || '-'
-        ) +
+        '<div class="detail-company-name">' +
+          escapeHtml(
+            customerName || '-'
+          ) +
+        '</div>' +
+
+        '<div class="detail-company-id">' +
+          'Company ID: ' +
+          escapeHtml(
+            companyId || '-'
+          ) +
+        '</div>' +
+
       '</div>' +
 
-      '<div class="detail-company-id">' +
-        'Company ID: ' +
-        escapeHtml(
-          companyId || '-'
-        ) +
-      '</div>' +
+      '<button ' +
+        'class="edit-icon-button" ' +
+        'type="button" ' +
+        'title="Edit Customer" ' +
+        'onclick="openCustomerEdit()">' +
+        '✎' +
+      '</button>' +
 
-    '</div>' +
-
-    '<button ' +
-      'class="edit-icon-button" ' +
-      'type="button" ' +
-      'title="Edit Customer" ' +
-      'onclick="openCustomerEdit()">' +
-      '✎' +
-    '</button>' +
-
-  '</div>';
+    '</div>';
 
 
-  /**********************************************
-   * CUSTOMER INFORMATION
-   **********************************************/
+  /*
+   * Customer information
+   */
 
   html +=
     '<div class="customer-info">';
@@ -1008,37 +1032,44 @@ html +=
     '</div>';
 
 
-  /**********************************************
-   * WEBSITE
-   **********************************************/
+  /*
+   * Website
+   */
 
   if (website) {
 
     html +=
+
       '<a class="website-link" ' +
-      'href="' +
-      escapeAttribute(
-        normalizeUrl(website)
-      ) +
-      '" ' +
-      'target="_blank">' +
-      'Visit Website' +
+
+        'href="' +
+          escapeAttribute(
+            normalizeUrl(website)
+          ) +
+        '"' +
+
+        'target="_blank">' +
+
+        'Visit Website' +
+
       '</a>';
 
   }
 
 
-  /**********************************************
-   * PEOPLE
-   **********************************************/
+  /*
+   * People
+   */
 
   html +=
+
     '<div class="people-heading">' +
       'People' +
     '</div>';
 
 
   html +=
+
     '<div id="peopleList">' +
 
       '<div class="loading">' +
@@ -1048,18 +1079,23 @@ html +=
     '</div>';
 
 
-  detail.innerHTML = html;
+  detail.innerHTML =
+    html;
 
-
-  /**********************************************
-   * LOAD CONTACTS
-   **********************************************/
 
   loadPeople(companyId);
 
 }
 
-function getField(obj, possibleNames) {
+
+/*************************************************
+ * GET FIELD
+ *************************************************/
+
+function getField(
+  obj,
+  possibleNames
+) {
 
   if (!obj) {
     return '';
@@ -1091,9 +1127,11 @@ function getField(obj, possibleNames) {
     ) {
 
       const actual =
-        String(keys[j])
-          .trim()
-          .toLowerCase();
+        String(
+          keys[j]
+        )
+        .trim()
+        .toLowerCase();
 
 
       if (actual === wanted) {
@@ -1111,9 +1149,17 @@ function getField(obj, possibleNames) {
 
 }
 
-function customerInfoItem(label, value) {
 
-  return (
+/*************************************************
+ * CUSTOMER INFO ITEM
+ *************************************************/
+
+function customerInfoItem(
+  label,
+  value
+) {
+
+  return
 
     '<div class="customer-info-item">' +
 
@@ -1125,11 +1171,14 @@ function customerInfoItem(label, value) {
         escapeHtml(value || '-') +
       '</div>' +
 
-    '</div>'
-
-  );
+    '</div>';
 
 }
+
+
+/*************************************************
+ * FORMAT POTENTIAL
+ *************************************************/
 
 function formatPotential(value) {
 
@@ -1155,45 +1204,14 @@ function formatPotential(value) {
   if (!isNaN(number)) {
 
     return '₹' +
-      number.toLocaleString('en-IN');
+      number.toLocaleString(
+        'en-IN'
+      );
 
   }
 
 
   return String(value);
-
-}
-
-/*************************************************
- * DETAIL CARD
- *************************************************/
-
-function detailCard(
-  label,
-  value
-) {
-
-  return
-
-    '<div class="detail-card">' +
-
-      '<div class="detail-label">' +
-
-        escapeHtml(
-          label
-        ) +
-
-      '</div>' +
-
-      '<div class="detail-value">' +
-
-        escapeHtml(
-          value || '-'
-        ) +
-
-      '</div>' +
-
-    '</div>';
 
 }
 
@@ -1206,43 +1224,41 @@ function loadPeople(companyId) {
 
   google.script.run
 
-    .withSuccessHandler(function (people) {
+    .withSuccessHandler(
+      function (people) {
 
-      console.log(
-        'People returned:',
-        people
-      );
-
-      renderPeople(
-        people || []
-      );
-
-    })
-
-    .withFailureHandler(function (error) {
-
-      console.error(
-        'People error:',
-        error
-      );
-
-
-      const container =
-        document.getElementById(
-          'peopleList'
+        renderPeople(
+          people || []
         );
 
+      }
+    )
 
-      if (container) {
+    .withFailureHandler(
+      function (error) {
 
-        container.innerHTML =
-          '<div class="no-contacts">' +
-            'Unable to load contact details.' +
-          '</div>';
+        const container =
+          document.getElementById(
+            'peopleList'
+          );
+
+
+        if (container) {
+
+          container.innerHTML =
+
+            '<div class="no-contacts">' +
+
+              'Unable to load contact details.' +
+
+            '</div>';
+
+        }
+
+        console.error(error);
 
       }
-
-    })
+    )
 
     .getPeopleByCompanyId(
       companyId
@@ -1250,11 +1266,14 @@ function loadPeople(companyId) {
 
 }
 
+
 /*************************************************
  * RENDER PEOPLE
  *************************************************/
 
-function renderPeople(people) {
+function renderPeople(
+  people
+) {
 
   const container =
     document.getElementById(
@@ -1267,193 +1286,240 @@ function renderPeople(people) {
   }
 
 
-  if (!people || !people.length) {
+  if (
+    !people ||
+    !people.length
+  ) {
 
-  container.innerHTML =
+    container.innerHTML =
 
-    '<div class="no-contacts">' +
+      '<div class="no-contacts">' +
 
-      '<div>' +
-        'No contact details available.' +
-      '</div>' +
+        '<div>' +
+          'No contact details available.' +
+        '</div>' +
 
-      '<button ' +
-        'class="add-contact-button" ' +
-        'onclick="openPersonEdit(\'\')">' +
-        '+ Add Contact' +
-      '</button>' +
+        '<button ' +
+          'class="add-contact-button" ' +
+          'onclick="openPersonEdit(\'\')">' +
 
-    '</div>';
+          '+ Add Contact' +
 
-  return;
+        '</button>' +
 
-}
+      '</div>';
+
+    return;
+
+  }
+
 
   container.innerHTML = '';
 
 
-  people.forEach(function(person) {
+  people.forEach(
+    function (person) {
 
-    const name =
-      getField(person, [
-        'name',
-        'Name'
-      ]);
-
-
-    const designation =
-      getField(person, [
-        'designation',
-        'Designation'
-      ]);
+      const name =
+        getField(
+          person,
+          [
+            'name',
+            'Name'
+          ]
+        );
 
 
-    const phone =
-      getField(person, [
-        'phone',
-        'Phone'
-      ]);
+      const designation =
+        getField(
+          person,
+          [
+            'designation',
+            'Designation'
+          ]
+        );
 
 
-    const email =
-      getField(person, [
-        'email',
-        'Email'
-      ]);
+      const phone =
+        getField(
+          person,
+          [
+            'phone',
+            'Phone'
+          ]
+        );
 
 
-    const visitingCard =
-      getField(person, [
-        'visitingCardUrl',
-        'visitingCard',
-        'Visiting Card',
-        'photo',
-        'Photo'
-      ]);
+      const email =
+        getField(
+          person,
+          [
+            'email',
+            'Email'
+          ]
+        );
 
 
-    const card =
-      document.createElement('div');
+      const visitingCard =
+        getField(
+          person,
+          [
+            'visitingCardUrl',
+            'visitingCard',
+            'Visiting Card',
+            'photo',
+            'Photo'
+          ]
+        );
 
 
-    card.className =
-      'person-card';
+      const peopleId =
+        getField(
+          person,
+          [
+            'peopleId',
+            'People ID'
+          ]
+        );
 
 
-    let html = '';
+      const card =
+        document.createElement(
+          'div'
+        );
 
 
-    html +=
-  '<div class="person-header">' +
-
-    '<div class="person-name">' +
-      escapeHtml(name || '-') +
-    '</div>' +
-
-    '<button ' +
-      'class="person-edit-button" ' +
-      'title="Edit Contact" ' +
-      'onclick="openPersonEdit(\'' +
-        escapeAttribute(
-          getField(
-            person,
-            [
-              'peopleId',
-              'People ID'
-            ]
-          )
-        ) +
-      '\')">' +
-      '✎' +
-    '</button>' +
-
-  '</div>';
+      card.className =
+        'person-card';
 
 
-    if (designation) {
+      let html = '';
+
 
       html +=
-        '<div class="person-designation">' +
-          escapeHtml(designation) +
-        '</div>';
 
-    }
+        '<div class="person-header">' +
 
+          '<div class="person-name">' +
+            escapeHtml(
+              name || '-'
+            ) +
+          '</div>' +
 
-    if (phone) {
+          '<button ' +
+            'class="person-edit-button" ' +
+            'title="Edit Contact" ' +
+            'onclick="openPersonEdit(\'' +
+              escapeAttribute(
+                peopleId
+              ) +
+            '\')">' +
 
-      html +=
-        '<div class="person-row">' +
+            '✎' +
 
-          '<span class="contact-label">' +
-            'Phone' +
-          '</span>' +
-
-          '<a href="tel:' +
-            escapeAttribute(phone) +
-          '">' +
-
-            escapeHtml(phone) +
-
-          '</a>' +
+          '</button>' +
 
         '</div>';
 
+
+      if (designation) {
+
+        html +=
+
+          '<div class="person-designation">' +
+            escapeHtml(
+              designation
+            ) +
+          '</div>';
+
+      }
+
+
+      if (phone) {
+
+        html +=
+
+          '<div class="person-row">' +
+
+            '<span class="contact-label">' +
+              'Phone' +
+            '</span>' +
+
+            '<a href="tel:' +
+              escapeAttribute(phone) +
+            '">' +
+
+              escapeHtml(phone) +
+
+            '</a>' +
+
+          '</div>';
+
+      }
+
+
+      if (email) {
+
+        html +=
+
+          '<div class="person-row">' +
+
+            '<span class="contact-label">' +
+              'Email' +
+            '</span>' +
+
+            '<a href="mailto:' +
+              escapeAttribute(email) +
+            '">' +
+
+              escapeHtml(email) +
+
+            '</a>' +
+
+          '</div>';
+
+      }
+
+
+      if (visitingCard) {
+
+        html +=
+
+          '<a class="visiting-card" ' +
+
+            'href="' +
+              escapeAttribute(
+                normalizeUrl(
+                  visitingCard
+                )
+              ) +
+            '"' +
+
+            'target="_blank">' +
+
+            'View Visiting Card' +
+
+          '</a>';
+
+      }
+
+
+      card.innerHTML =
+        html;
+
+
+      container.appendChild(
+        card
+      );
+
     }
-
-
-    if (email) {
-
-      html +=
-        '<div class="person-row">' +
-
-          '<span class="contact-label">' +
-            'Email' +
-          '</span>' +
-
-          '<a href="mailto:' +
-            escapeAttribute(email) +
-          '">' +
-
-            escapeHtml(email) +
-
-          '</a>' +
-
-        '</div>';
-
-    }
-
-
-    if (visitingCard) {
-
-      html +=
-        '<a class="visiting-card" ' +
-        'href="' +
-          escapeAttribute(
-            normalizeUrl(visitingCard)
-          ) +
-        '" ' +
-        'target="_blank">' +
-
-        'View Visiting Card' +
-
-        '</a>';
-
-    }
-
-
-    card.innerHTML =
-      html;
-
-
-    container.appendChild(card);
-
-  });
+  );
 
 }
 
+
 /*************************************************
- * SHOW CUSTOMER PANEL
+ * SHOW CUSTOMER VIEW
  *************************************************/
 
 function showCustomerView() {
@@ -1479,7 +1545,7 @@ function showCustomerView() {
 
 
 /*************************************************
- * SHOW CUSTOMER DETAILS
+ * SHOW DETAIL VIEW
  *************************************************/
 
 function showDetailView() {
@@ -1534,6 +1600,1414 @@ function closeCustomerPanel() {
 
 
 /*************************************************
+ * EDIT CUSTOMER
+ *************************************************/
+
+function openCustomerEdit() {
+
+  if (!activeCustomer) {
+    return;
+  }
+
+
+  loadSettingsOptions(
+    function (options) {
+
+      showCustomerEditForm(
+        options
+      );
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * CUSTOMER EDIT FORM
+ *************************************************/
+
+function showCustomerEditForm(
+  options
+) {
+
+  const customer =
+    activeCustomer;
+
+
+  const companyId =
+    getField(
+      customer,
+      [
+        'companyId',
+        'Company ID'
+      ]
+    );
+
+
+  const customerName =
+    getField(
+      customer,
+      [
+        'customerName',
+        'Customer Name',
+        'Company'
+      ]
+    );
+
+
+  const industrialArea =
+    getField(
+      customer,
+      [
+        'industrialArea',
+        'Industrial Area'
+      ]
+    );
+
+
+  const industrialHub =
+    getField(
+      customer,
+      [
+        'industrialHub',
+        'Industrial Hub'
+      ]
+    );
+
+
+  const city =
+    getField(
+      customer,
+      [
+        'city',
+        'City'
+      ]
+    );
+
+
+  const type =
+    getField(
+      customer,
+      [
+        'type',
+        'Type'
+      ]
+    );
+
+
+  const status =
+    getField(
+      customer,
+      [
+        'status',
+        'Status'
+      ]
+    );
+
+
+  const potential =
+    getField(
+      customer,
+      [
+        'potential',
+        'Potential'
+      ]
+    );
+
+
+  const website =
+    getField(
+      customer,
+      [
+        'website',
+        'Website'
+      ]
+    );
+
+
+  const notes =
+    getField(
+      customer,
+      [
+        'notes',
+        'Notes'
+      ]
+    );
+
+
+  let html = '';
+
+
+  /*
+   * Company ID
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Company ID</label>' +
+
+      '<input ' +
+        'id="editCompanyId" ' +
+        'value="' +
+          escapeAttribute(companyId) +
+        '"' +
+        ' readonly>' +
+
+    '</div>';
+
+
+  /*
+   * Customer Name
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Customer Name</label>' +
+
+      '<input ' +
+        'id="editCustomerName" ' +
+        'value="' +
+          escapeAttribute(customerName) +
+        '">' +
+
+    '</div>';
+
+
+  /*
+   * Industrial Area
+   */
+
+  html += createSelectHtml(
+
+    'editIndustrialArea',
+
+    'Industrial Area',
+
+    options['Industrial Area'],
+
+    industrialArea
+
+  );
+
+
+  /*
+   * Industrial Hub
+   */
+
+  html += createSelectHtml(
+
+    'editIndustrialHub',
+
+    'Industrial Hub',
+
+    options['Industrial Hub'],
+
+    industrialHub
+
+  );
+
+
+  /*
+   * City
+   */
+
+  html += createSelectHtml(
+
+    'editCity',
+
+    'City',
+
+    options['City'],
+
+    city
+
+  );
+
+
+  /*
+   * Type
+   */
+
+  html += createSelectHtml(
+
+    'editType',
+
+    'Type',
+
+    options['Type'],
+
+    type
+
+  );
+
+
+  /*
+   * Status
+   */
+
+  html += createSelectHtml(
+
+    'editStatus',
+
+    'Status',
+
+    options['Status'],
+
+    status
+
+  );
+
+
+  /*
+   * Potential
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Potential</label>' +
+
+      '<input ' +
+        'id="editPotential" ' +
+        'value="' +
+          escapeAttribute(potential) +
+        '">' +
+
+    '</div>';
+
+
+  /*
+   * Website
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Website</label>' +
+
+      '<input ' +
+        'id="editWebsite" ' +
+        'value="' +
+          escapeAttribute(website) +
+        '">' +
+
+    '</div>';
+
+
+  /*
+   * Notes
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Notes</label>' +
+
+      '<textarea ' +
+        'id="editNotes">' +
+
+        escapeHtml(notes) +
+
+      '</textarea>' +
+
+    '</div>';
+
+
+  openEditModal(
+
+    'Edit Customer',
+
+    html,
+
+    saveCustomer
+
+  );
+
+}
+
+
+/*************************************************
+ * EDIT MODAL
+ *************************************************/
+
+function openEditModal(
+  title,
+  content,
+  saveFunction
+) {
+
+  let modal =
+    document.getElementById(
+      'editModal'
+    );
+
+
+  if (!modal) {
+
+    modal =
+      document.createElement(
+        'div'
+      );
+
+
+    modal.id =
+      'editModal';
+
+
+    modal.className =
+      'edit-modal';
+
+
+    document.body.appendChild(
+      modal
+    );
+
+  }
+
+
+  modal.innerHTML =
+
+    '<div class="edit-modal-box">' +
+
+      '<div class="edit-modal-header">' +
+
+        '<div class="edit-modal-title">' +
+          escapeHtml(title) +
+        '</div>' +
+
+        '<button ' +
+          'class="modal-close" ' +
+          'onclick="closeEditModal()">' +
+          '×' +
+        '</button>' +
+
+      '</div>' +
+
+      '<div class="edit-modal-body">' +
+        content +
+      '</div>' +
+
+      '<div class="edit-modal-footer">' +
+
+        '<button ' +
+          'class="cancel-button" ' +
+          'onclick="closeEditModal()">' +
+          'Cancel' +
+        '</button>' +
+
+        '<button ' +
+          'class="save-button" ' +
+          'id="editSaveButton">' +
+          'Save' +
+        '</button>' +
+
+      '</div>' +
+
+    '</div>';
+
+
+  modal
+    .classList
+    .remove('hidden');
+
+
+  document
+    .getElementById(
+      'editSaveButton'
+    )
+    .onclick =
+    saveFunction;
+
+}
+
+
+/*************************************************
+ * CLOSE EDIT MODAL
+ *************************************************/
+
+function closeEditModal() {
+
+  const modal =
+    document.getElementById(
+      'editModal'
+    );
+
+
+  if (modal) {
+
+    modal
+      .classList
+      .add('hidden');
+
+  }
+
+}
+
+
+/*************************************************
+ * SAVE CUSTOMER
+ *************************************************/
+
+function saveCustomer() {
+
+  const companyId =
+    document
+      .getElementById(
+        'editCompanyId'
+      )
+      .value
+      .trim();
+
+
+  const data = {
+
+    customerName:
+      document
+        .getElementById(
+          'editCustomerName'
+        )
+        .value
+        .trim(),
+
+    industrialArea:
+      document
+        .getElementById(
+          'editIndustrialArea'
+        )
+        .value
+        .trim(),
+
+    industrialHub:
+      document
+        .getElementById(
+          'editIndustrialHub'
+        )
+        .value
+        .trim(),
+
+    city:
+      document
+        .getElementById(
+          'editCity'
+        )
+        .value
+        .trim(),
+
+    type:
+      document
+        .getElementById(
+          'editType'
+        )
+        .value
+        .trim(),
+
+    status:
+      document
+        .getElementById(
+          'editStatus'
+        )
+        .value
+        .trim(),
+
+    potential:
+      document
+        .getElementById(
+          'editPotential'
+        )
+        .value
+        .trim(),
+
+    website:
+      document
+        .getElementById(
+          'editWebsite'
+        )
+        .value
+        .trim(),
+
+    notes:
+      document
+        .getElementById(
+          'editNotes'
+        )
+        .value
+        .trim()
+
+  };
+
+
+  const button =
+    document.getElementById(
+      'editSaveButton'
+    );
+
+
+  button.disabled = true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function () {
+
+        /*
+         * Update local customer data
+         */
+
+        Object.keys(data).forEach(
+          function (key) {
+
+            activeCustomer[key] =
+              data[key];
+
+          }
+        );
+
+
+        /*
+         * Close modal
+         */
+
+        closeEditModal();
+
+
+        /*
+         * Refresh customer details
+         */
+
+        refreshCustomerDetails();
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Save';
+
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .updateCustomerRecord(
+      companyId,
+      data
+    );
+
+}
+
+
+/*************************************************
+ * REFRESH CUSTOMER DETAILS
+ *************************************************/
+
+function refreshCustomerDetails() {
+
+  if (!activeCustomer) {
+    return;
+  }
+
+
+  const companyId =
+    getField(
+      activeCustomer,
+      [
+        'companyId',
+        'Company ID'
+      ]
+    );
+
+
+  /*
+   * Reload the selected hub.
+   * This makes sure the app has
+   * the latest Sheet data.
+   */
+
+  if (!activeHub) {
+
+    renderCustomerDetail();
+
+    return;
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (data) {
+
+        const updatedCustomers =
+          data || [];
+
+
+        const updated =
+          updatedCustomers.find(
+            function (customer) {
+
+              const id =
+                getField(
+                  customer,
+                  [
+                    'companyId',
+                    'Company ID'
+                  ]
+                );
+
+              return String(id) ===
+                String(companyId);
+
+            }
+          );
+
+
+        if (updated) {
+
+          activeCustomer =
+            updated;
+
+        }
+
+
+        customers =
+          updatedCustomers;
+
+
+        renderCustomerDetail();
+
+      }
+    )
+
+    .withFailureHandler(
+      function () {
+
+        /*
+         * If refresh fails,
+         * at least show local data.
+         */
+
+        renderCustomerDetail();
+
+      }
+    )
+
+    .getCustomersByHub(
+      activeHub.hub
+    );
+
+}
+
+
+/*************************************************
+ * ADD / EDIT PERSON
+ *************************************************/
+
+function openPersonEdit(
+  peopleId
+) {
+
+  /*
+   * Load Designation dropdown
+   * from Settings.
+   */
+
+  loadSettingsOptions(
+    function (options) {
+
+      if (peopleId) {
+
+        loadPersonForEdit(
+          peopleId,
+          options
+        );
+
+      } else {
+
+        showPersonEditForm(
+          null,
+          options
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * LOAD PERSON
+ *************************************************/
+
+function loadPersonForEdit(
+  peopleId,
+  options
+) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (person) {
+
+        showPersonEditForm(
+          person,
+          options
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .getPersonById(
+      peopleId
+    );
+
+}
+
+
+/*************************************************
+ * PERSON EDIT FORM
+ *************************************************/
+
+function showPersonEditForm(
+  person,
+  options
+) {
+
+  person =
+    person || {};
+
+
+  options =
+    options || {};
+
+
+  const peopleId =
+    getField(
+      person,
+      [
+        'peopleId',
+        'People ID'
+      ]
+    );
+
+
+  const companyId =
+    getField(
+      activeCustomer,
+      [
+        'companyId',
+        'Company ID'
+      ]
+    );
+
+
+  const name =
+    getField(
+      person,
+      [
+        'name',
+        'Name'
+      ]
+    );
+
+
+  const designation =
+    getField(
+      person,
+      [
+        'designation',
+        'Designation'
+      ]
+    );
+
+
+  const phone =
+    getField(
+      person,
+      [
+        'phone',
+        'Phone'
+      ]
+    );
+
+
+  const email =
+    getField(
+      person,
+      [
+        'email',
+        'Email'
+      ]
+    );
+
+
+  const photo =
+    getField(
+      person,
+      [
+        'photo',
+        'Photo'
+      ]
+    );
+
+
+  let html = '';
+
+
+  html +=
+
+    '<input type="hidden" ' +
+      'id="editPeopleId" ' +
+      'value="' +
+        escapeAttribute(
+          peopleId
+        ) +
+      '">';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Company ID</label>' +
+
+      '<input ' +
+        'value="' +
+          escapeAttribute(
+            companyId
+          ) +
+        '" readonly>' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Name</label>' +
+
+      '<input ' +
+        'id="editPersonName" ' +
+        'value="' +
+          escapeAttribute(
+            name
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  /*
+   * DESIGNATION DROPDOWN
+   *
+   * Values come from Settings
+   * column G.
+   */
+
+  html += createSelectHtml(
+
+    'editPersonDesignation',
+
+    'Designation',
+
+    options['Designation'],
+
+    designation
+
+  );
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Phone</label>' +
+
+      '<input ' +
+        'id="editPersonPhone" ' +
+        'value="' +
+          escapeAttribute(
+            phone
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Email</label>' +
+
+      '<input ' +
+        'id="editPersonEmail" ' +
+        'value="' +
+          escapeAttribute(
+            email
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Visiting Card</label>' +
+
+      '<input ' +
+        'id="editPersonPhoto" ' +
+        'value="' +
+          escapeAttribute(
+            photo
+          ) +
+        '">' +
+
+    '</div>';
+
+
+  openEditModal(
+
+    peopleId
+      ? 'Edit Contact'
+      : 'Add Contact',
+
+    html,
+
+    savePerson
+
+  );
+
+}
+
+
+/*************************************************
+ * SAVE PERSON
+ *************************************************/
+
+function savePerson() {
+
+  const peopleId =
+    document
+      .getElementById(
+        'editPeopleId'
+      )
+      .value
+      .trim();
+
+
+  const companyId =
+    getField(
+      activeCustomer,
+      [
+        'companyId',
+        'Company ID'
+      ]
+    );
+
+
+  const data = {
+
+    name:
+      document
+        .getElementById(
+          'editPersonName'
+        )
+        .value
+        .trim(),
+
+    designation:
+      document
+        .getElementById(
+          'editPersonDesignation'
+        )
+        .value
+        .trim(),
+
+    phone:
+      document
+        .getElementById(
+          'editPersonPhone'
+        )
+        .value
+        .trim(),
+
+    email:
+      document
+        .getElementById(
+          'editPersonEmail'
+        )
+        .value
+        .trim(),
+
+    photo:
+      document
+        .getElementById(
+          'editPersonPhoto'
+        )
+        .value
+        .trim()
+
+  };
+
+
+  const button =
+    document.getElementById(
+      'editSaveButton'
+    );
+
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function () {
+
+        closeEditModal();
+
+        /*
+         * Reload customer details
+         * including People.
+         */
+
+        renderCustomerDetail();
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Save';
+
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .savePersonRecord(
+      peopleId,
+      companyId,
+      data
+    );
+
+}
+
+
+/*************************************************
+ * LOAD SETTINGS OPTIONS
+ *************************************************/
+
+function loadSettingsOptions(
+  callback
+) {
+
+  if (settingsOptions) {
+
+    callback(
+      settingsOptions
+    );
+
+    return;
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (data) {
+
+        settingsOptions =
+          data || {};
+
+
+        callback(
+          settingsOptions
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        console.error(
+          'Settings error:',
+          error
+        );
+
+
+        settingsOptions =
+          {};
+
+
+        callback(
+          settingsOptions
+        );
+
+      }
+    )
+
+    .getSettingsOptions();
+
+}
+
+
+/*************************************************
+ * CREATE SELECT
+ *************************************************/
+
+function createSelectHtml(
+  id,
+  label,
+  options,
+  selectedValue
+) {
+
+  options =
+    options || [];
+
+
+  let html =
+
+    '<div class="edit-field">' +
+
+      '<label>' +
+
+        escapeHtml(
+          label
+        ) +
+
+      '</label>' +
+
+      '<select id="' +
+
+        escapeAttribute(id) +
+
+      '">';
+
+
+  html +=
+
+    '<option value="">' +
+
+      'Select ' +
+
+      escapeHtml(label) +
+
+    '</option>';
+
+
+  options.forEach(
+    function (option) {
+
+      const selected =
+        String(option) ===
+        String(
+          selectedValue || ''
+        )
+
+          ? ' selected'
+
+          : '';
+
+
+      html +=
+
+        '<option ' +
+
+          'value="' +
+            escapeAttribute(
+              option
+            ) +
+          '"' +
+
+          selected +
+
+        '>' +
+
+          escapeHtml(
+            option
+          ) +
+
+        '</option>';
+
+    }
+  );
+
+
+  html +=
+
+      '</select>' +
+
+    '</div>';
+
+
+  return html;
+
+}
+
+
+/*************************************************
+ * OPEN GOOGLE SHEET
+ *************************************************/
+
+function openSheet() {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (url) {
+
+        if (url) {
+
+          window.open(
+            url,
+            '_blank'
+          );
+
+        }
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        showError(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .getSpreadsheetUrl();
+
+}
+
+
+/*************************************************
+ * RESET HOME VIEW
+ *************************************************/
+
+function resetHomeView() {
+
+  /*
+   * Close panels
+   */
+
+  const customerView =
+    document.getElementById(
+      'customerView'
+    );
+
+  if (customerView) {
+
+    customerView.classList.add(
+      'hidden'
+    );
+
+  }
+
+
+  const detailView =
+    document.getElementById(
+      'detailView'
+    );
+
+  if (detailView) {
+
+    detailView.classList.add(
+      'hidden'
+    );
+
+  }
+
+
+  /*
+   * Clear selection
+   */
+
+  activeHubIndex = -1;
+
+  activeHub = null;
+
+  activeCustomer = null;
+
+  customers = [];
+
+
+  /*
+   * Reset map
+   */
+
+  if (map) {
+
+    map.panTo({
+
+      lat: 12.9716,
+
+      lng: 77.5946
+
+    });
+
+
+    map.setZoom(11);
+
+  }
+
+}
+
+
+/*************************************************
  * LOADING
  *************************************************/
 
@@ -1546,9 +3020,7 @@ function showLoading(show) {
 
 
   if (!loading) {
-
     return;
-
   }
 
 
@@ -1582,9 +3054,7 @@ function showError(message) {
 
 
   if (!error) {
-
     return;
-
   }
 
 
@@ -1600,6 +3070,10 @@ function showError(message) {
 }
 
 
+/*************************************************
+ * HIDE ERROR
+ *************************************************/
+
 function hideError() {
 
   const error =
@@ -1609,9 +3083,7 @@ function hideError() {
 
 
   if (!error) {
-
     return;
-
   }
 
 
@@ -1623,7 +3095,7 @@ function hideError() {
 
 
 /*************************************************
- * URL
+ * NORMALIZE URL
  *************************************************/
 
 function normalizeUrl(url) {
@@ -1635,9 +3107,7 @@ function normalizeUrl(url) {
 
 
   if (!value) {
-
     return '';
-
   }
 
 
@@ -1753,789 +3223,12 @@ function getErrorMessage(error) {
 
 
   return (
+
     error.message ||
+
     'Unknown error.'
-  );
-
-}
-
-function openSheet() {
-
-  google.script.run
-
-    .withSuccessHandler(function(url) {
-
-      if (url) {
-
-        window.open(
-          url,
-          '_blank'
-        );
-
-      }
-
-    })
-
-    .withFailureHandler(function(error) {
-
-      showError(
-        getErrorMessage(error)
-      );
-
-    })
-
-    .getSpreadsheetUrl();
-
-}
-
-/*************************************************
- * RESET TO HOME VIEW
- *************************************************/
-
-function resetHomeView() {
-
-  /*
-   * Close customer panels
-   */
-
-  document
-    .getElementById('customerView')
-    .classList.add('hidden');
-
-
-  document
-    .getElementById('detailView')
-    .classList.add('hidden');
-
-
-  /*
-   * Clear current selection
-   */
-
-  activeHubIndex = -1;
-
-  activeHub = null;
-
-  activeCustomer = null;
-
-  customers = [];
-
-
-  /*
-   * Reset map to initial view
-   */
-
-  if (map) {
-
-    map.panTo({
-
-      lat: 12.9716,
-
-      lng: 77.5946
-
-    });
-
-
-    map.setZoom(11);
-
-  }
-
-}
-
-/*************************************************
- * EDIT CUSTOMER
- *************************************************/
-
-function openCustomerEdit() {
-
-  if (!activeCustomer) {
-    return;
-  }
-
-
-  const customer = activeCustomer;
-
-
-  const companyId =
-    getField(customer, [
-      'companyId',
-      'Company ID'
-    ]);
-
-
-  const customerName =
-    getField(customer, [
-      'customerName',
-      'Customer Name',
-      'Company'
-    ]);
-
-
-  const industrialArea =
-    getField(customer, [
-      'industrialArea',
-      'Industrial Area'
-    ]);
-
-
-  const industrialHub =
-    getField(customer, [
-      'industrialHub',
-      'Industrial Hub'
-    ]);
-
-
-  const city =
-    getField(customer, [
-      'city',
-      'City'
-    ]);
-
-
-  const type =
-    getField(customer, [
-      'type',
-      'Type'
-    ]);
-
-
-  const status =
-    getField(customer, [
-      'status',
-      'Status'
-    ]);
-
-
-  const potential =
-    getField(customer, [
-      'potential',
-      'Potential'
-    ]);
-
-
-  const website =
-    getField(customer, [
-      'website',
-      'Website'
-    ]);
-
-
-  const notes =
-    getField(customer, [
-      'notes',
-      'Notes'
-    ]);
-
-
-  openEditModal(
-    'Edit Customer',
-    `
-      <div class="edit-field">
-        <label>Company ID</label>
-        <input
-          id="editCompanyId"
-          value="${escapeAttribute(companyId)}"
-          readonly
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Customer Name</label>
-        <input
-          id="editCustomerName"
-          value="${escapeAttribute(customerName)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Industrial Area</label>
-        <input
-          id="editIndustrialArea"
-          value="${escapeAttribute(industrialArea)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Industrial Hub</label>
-        <input
-          id="editIndustrialHub"
-          value="${escapeAttribute(industrialHub)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>City</label>
-        <input
-          id="editCity"
-          value="${escapeAttribute(city)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Type</label>
-        <input
-          id="editType"
-          value="${escapeAttribute(type)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Status</label>
-        <input
-          id="editStatus"
-          value="${escapeAttribute(status)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Potential</label>
-        <input
-          id="editPotential"
-          value="${escapeAttribute(potential)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Website</label>
-        <input
-          id="editWebsite"
-          value="${escapeAttribute(website)}"
-        >
-      </div>
-
-      <div class="edit-field">
-        <label>Notes</label>
-        <textarea id="editNotes">${escapeHtml(notes)}</textarea>
-      </div>
-    `,
-    saveCustomer
-  );
-
-}
-
-/*************************************************
- * EDIT MODAL
- *************************************************/
-
-function openEditModal(
-  title,
-  content,
-  saveFunction
-) {
-
-  let modal =
-    document.getElementById(
-      'editModal'
-    );
-
-
-  if (!modal) {
-
-    modal =
-      document.createElement('div');
-
-    modal.id =
-      'editModal';
-
-    modal.className =
-      'edit-modal';
-
-    document.body.appendChild(
-      modal
-    );
-
-  }
-
-
-  modal.innerHTML =
-
-    '<div class="edit-modal-box">' +
-
-      '<div class="edit-modal-header">' +
-
-        '<div class="edit-modal-title">' +
-          escapeHtml(title) +
-        '</div>' +
-
-        '<button ' +
-          'class="modal-close" ' +
-          'onclick="closeEditModal()">' +
-          '×' +
-        '</button>' +
-
-      '</div>' +
-
-      '<div class="edit-modal-body">' +
-        content +
-      '</div>' +
-
-      '<div class="edit-modal-footer">' +
-
-        '<button ' +
-          'class="cancel-button" ' +
-          'onclick="closeEditModal()">' +
-          'Cancel' +
-        '</button>' +
-
-        '<button ' +
-          'class="save-button" ' +
-          'id="editSaveButton">' +
-          'Save' +
-        '</button>' +
-
-      '</div>' +
-
-    '</div>';
-
-
-  modal
-    .classList
-    .remove('hidden');
-
-
-  document
-    .getElementById(
-      'editSaveButton'
-    )
-    .onclick =
-    saveFunction;
-
-}
-
-
-function closeEditModal() {
-
-  const modal =
-    document.getElementById(
-      'editModal'
-    );
-
-
-  if (modal) {
-
-    modal
-      .classList
-      .add('hidden');
-
-  }
-
-}
-
-/*************************************************
- * SAVE CUSTOMER
- *************************************************/
-
-function saveCustomer() {
-
-  const companyId =
-    document.getElementById(
-      'editCompanyId'
-    ).value.trim();
-
-
-  const data = {
-
-    customerName:
-      document.getElementById(
-        'editCustomerName'
-      ).value.trim(),
-
-    industrialArea:
-      document.getElementById(
-        'editIndustrialArea'
-      ).value.trim(),
-
-    industrialHub:
-      document.getElementById(
-        'editIndustrialHub'
-      ).value.trim(),
-
-    city:
-      document.getElementById(
-        'editCity'
-      ).value.trim(),
-
-    type:
-      document.getElementById(
-        'editType'
-      ).value.trim(),
-
-    status:
-      document.getElementById(
-        'editStatus'
-      ).value.trim(),
-
-    potential:
-      document.getElementById(
-        'editPotential'
-      ).value.trim(),
-
-    website:
-      document.getElementById(
-        'editWebsite'
-      ).value.trim(),
-
-    notes:
-      document.getElementById(
-        'editNotes'
-      ).value.trim()
-
-  };
-
-
-  const button =
-    document.getElementById(
-      'editSaveButton'
-    );
-
-
-  button.disabled = true;
-
-  button.textContent =
-    'Saving...';
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function() {
-
-        closeEditModal();
-
-        refreshCustomerDetails();
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          'Save';
-
-        alert(
-          getErrorMessage(error)
-        );
-
-      }
-    )
-
-    .updateCustomerRecord(
-      companyId,
-      data
-    );
-
-}
-
-/*************************************************
- * ADD / EDIT PERSON
- *************************************************/
-
-function openPersonEdit(
-  peopleId
-) {
-
-  if (peopleId) {
-
-    loadPersonForEdit(
-      peopleId
-    );
-
-    return;
-
-  }
-
-
-  showPersonEditForm(
-    null
-  );
-
-}
-
-function loadPersonForEdit(
-  peopleId
-) {
-
-  google.script.run
-
-    .withSuccessHandler(
-      function(person) {
-
-        showPersonEditForm(
-          person
-        );
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        alert(
-          getErrorMessage(error)
-        );
-
-      }
-    )
-
-    .getPersonById(
-      peopleId
-    );
-
-}
-
-function showPersonEditForm(
-  person
-) {
-
-  person =
-    person || {};
-
-
-  const peopleId =
-    getField(
-      person,
-      [
-        'peopleId',
-        'People ID'
-      ]
-    );
-
-
-  const companyId =
-    getField(
-      activeCustomer,
-      [
-        'companyId',
-        'Company ID'
-      ]
-    );
-
-
-  const name =
-    getField(
-      person,
-      [
-        'name',
-        'Name'
-      ]
-    );
-
-
-  const designation =
-    getField(
-      person,
-      [
-        'designation',
-        'Designation'
-      ]
-    );
-
-
-  const phone =
-    getField(
-      person,
-      [
-        'phone',
-        'Phone'
-      ]
-    );
-
-
-  const email =
-    getField(
-      person,
-      [
-        'email',
-        'Email'
-      ]
-    );
-
-
-  const photo =
-    getField(
-      person,
-      [
-        'photo',
-        'Photo'
-      ]
-    );
-
-
-  openEditModal(
-
-    peopleId
-      ? 'Edit Contact'
-      : 'Add Contact',
-
-    '<input type="hidden" ' +
-      'id="editPeopleId" ' +
-      'value="' +
-      escapeAttribute(peopleId) +
-      '">'
-
-    +
-
-    '<div class="edit-field">' +
-      '<label>Company ID</label>' +
-      '<input value="' +
-        escapeAttribute(companyId) +
-        '" readonly>' +
-    '</div>'
-
-    +
-
-    '<div class="edit-field">' +
-      '<label>Name</label>' +
-      '<input id="editPersonName" ' +
-        'value="' +
-        escapeAttribute(name) +
-        '">' +
-    '</div>'
-
-    +
-
-    '<div class="edit-field">' +
-      '<label>Designation</label>' +
-      '<input id="editPersonDesignation" ' +
-        'value="' +
-        escapeAttribute(designation) +
-        '">' +
-    '</div>'
-
-    +
-
-    '<div class="edit-field">' +
-      '<label>Phone</label>' +
-      '<input id="editPersonPhone" ' +
-        'value="' +
-        escapeAttribute(phone) +
-        '">' +
-    '</div>'
-
-    +
-
-    '<div class="edit-field">' +
-      '<label>Email</label>' +
-      '<input id="editPersonEmail" ' +
-        'value="' +
-        escapeAttribute(email) +
-        '">' +
-    '</div>'
-
-    +
-
-    '<div class="edit-field">' +
-      '<label>Visiting Card</label>' +
-      '<input id="editPersonPhoto" ' +
-        'value="' +
-        escapeAttribute(photo) +
-        '">' +
-    '</div>',
-
-    savePerson
 
   );
-
-}
-
-function savePerson() {
-
-  const peopleId =
-    document.getElementById(
-      'editPeopleId'
-    ).value.trim();
-
-
-  const companyId =
-    getField(
-      activeCustomer,
-      [
-        'companyId',
-        'Company ID'
-      ]
-    );
-
-
-  const data = {
-
-    name:
-      document.getElementById(
-        'editPersonName'
-      ).value.trim(),
-
-    designation:
-      document.getElementById(
-        'editPersonDesignation'
-      ).value.trim(),
-
-    phone:
-      document.getElementById(
-        'editPersonPhone'
-      ).value.trim(),
-
-    email:
-      document.getElementById(
-        'editPersonEmail'
-      ).value.trim(),
-
-    photo:
-      document.getElementById(
-        'editPersonPhoto'
-      ).value.trim()
-
-  };
-
-
-  const button =
-    document.getElementById(
-      'editSaveButton'
-    );
-
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    'Saving...';
-
-
-  google.script.run
-
-    .withSuccessHandler(
-      function() {
-
-        closeEditModal();
-
-        renderCustomerDetail();
-
-      }
-    )
-
-    .withFailureHandler(
-      function(error) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          'Save';
-
-        alert(
-          getErrorMessage(error)
-        );
-
-      }
-    )
-
-    .savePersonRecord(
-      peopleId,
-      companyId,
-      data
-    );
 
 }
 

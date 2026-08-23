@@ -1360,3 +1360,84 @@ function getPersonById(peopleId) {
   return null;
 
 }
+
+/*************************************************
+ * GET SETTINGS DROPDOWN VALUES
+ *************************************************/
+
+function getSettingsOptions() {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName('Settings');
+
+  if (!sheet) {
+    throw new Error(
+      'Settings sheet not found.'
+    );
+  }
+
+  const values =
+    sheet.getDataRange().getValues();
+
+  if (!values.length) {
+    return {};
+  }
+
+  const result = {};
+
+  /*
+   * Settings sheet has the following headers:
+   *
+   * Industrial Area
+   * City
+   * Industrial Hub
+   * Designation
+   * Type
+   * Status
+   */
+
+  values[0].forEach(
+    function(header, columnIndex) {
+
+      const key =
+        String(header)
+          .trim();
+
+      if (!key) {
+        return;
+      }
+
+      const list = [];
+
+      for (
+        let row = 1;
+        row < values.length;
+        row++
+      ) {
+
+        const value =
+          String(
+            values[row][columnIndex] || ''
+          ).trim();
+
+        if (
+          value &&
+          list.indexOf(value) === -1
+        ) {
+
+          list.push(value);
+
+        }
+
+      }
+
+      result[key] = list;
+
+    }
+  );
+
+  return result;
+}
