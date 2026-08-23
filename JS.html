@@ -350,17 +350,14 @@ function loadHubs() {
 function renderHubMarkers() {
 
   /*
-   * Remove old markers.
+   * Remove existing markers
    */
 
-  markers.forEach(
-    function (marker) {
+  markers.forEach(function (marker) {
 
-      marker.setMap(null);
+    marker.setMap(null);
 
-    }
-  );
-
+  });
 
   markers = [];
 
@@ -376,111 +373,143 @@ function renderHubMarkers() {
     new google.maps.LatLngBounds();
 
 
-  hubs.forEach(
-    function (hub, index) {
+  hubs.forEach(function (hub, index) {
 
-      const position = {
+    const position = {
 
-        lat:
-          Number(
-            hub.latitude
-          ),
+      lat: Number(hub.latitude),
 
-        lng:
-          Number(
-            hub.longitude
-          )
+      lng: Number(hub.longitude)
 
-      };
+    };
 
 
-      /*
-       * Transparent icon.
-       *
-       * No bullet / pin.
-       */
+    /*
+     * Estimate the text width.
+     *
+     * This keeps the clickable area
+     * close to the actual hub name.
+     */
 
-      const transparentIcon = {
-
-        url:
-          'data:image/svg+xml;charset=UTF-8,' +
-          encodeURIComponent(
-            '<svg xmlns="http://www.w3.org/2000/svg" ' +
-            'width="1" height="1">' +
-            '</svg>'
-          ),
-
-        scaledSize:
-          new google.maps.Size(
-            1,
-            1
-          ),
-
-        anchor:
-          new google.maps.Point(
-            0,
-            0
-          )
-
-      };
+    const name =
+      String(hub.hub || '');
 
 
-      /*
-       * Black hub name.
-       *
-       * Similar visual treatment
-       * to Google map labels.
-       */
-
-      const marker =
-        new google.maps.Marker({
-
-          position: position,
-
-          map: map,
-
-          title: hub.hub,
-
-          icon: transparentIcon,
-
-          label: {
-
-            text: hub.hub,
-
-            color: '#202124',
-
-            fontFamily:
-              'Roboto, Arial, sans-serif',
-
-            fontSize: '12px',
-
-            fontWeight: '500'
-
-          }
-
-        });
-
-
-      /*
-       * CLICK HUB
-       */
-
-      marker.addListener(
-        'click',
-        function () {
-
-          selectHub(index);
-
-        }
+    const textWidth =
+      Math.max(
+        45,
+        Math.min(
+          150,
+          name.length * 7 + 12
+        )
       );
 
 
-      markers.push(marker);
+    const textHeight = 24;
 
-      bounds.extend(position);
 
-    }
-  );
+    /*
+     * Transparent SVG.
+     *
+     * No visible bullet.
+     */
+
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" ' +
+      'width="' + textWidth + '" ' +
+      'height="' + textHeight + '">' +
+
+        '<rect ' +
+          'x="0" ' +
+          'y="0" ' +
+          'width="' + textWidth + '" ' +
+          'height="' + textHeight + '" ' +
+          'fill="white" ' +
+          'fill-opacity="0.01"/>' +
+
+      '</svg>';
+
+
+    const transparentIcon = {
+
+      url:
+        'data:image/svg+xml;charset=UTF-8,' +
+        encodeURIComponent(svg),
+
+      scaledSize:
+        new google.maps.Size(
+          textWidth,
+          textHeight
+        ),
+
+      anchor:
+        new google.maps.Point(
+          textWidth / 2,
+          textHeight / 2
+        )
+
+    };
+
+
+    /*
+     * Standard Google Maps marker.
+     *
+     * Small clickable area matching
+     * approximately the hub name.
+     */
+
+    const marker =
+      new google.maps.Marker({
+
+        position: position,
+
+        map: map,
+
+        title: name,
+
+        icon: transparentIcon,
+
+        label: {
+
+          text: name,
+
+          color: '#202124',
+
+          fontFamily:
+            'Roboto, Arial, sans-serif',
+
+          fontSize: '12px',
+
+          fontWeight: '500'
+
+        },
+
+        clickable: true,
+
+        zIndex: 1000 + index
+
+      });
+
+
+    /*
+     * Click exactly this hub.
+     */
+
+    marker.addListener(
+      'click',
+      function () {
+
+        selectHub(index);
+
+      }
+    );
+
+
+    markers.push(marker);
+
+    bounds.extend(position);
+
+  });
 
 
   /*
@@ -503,7 +532,6 @@ function renderHubMarkers() {
 
     });
 
-
     map.setZoom(11);
 
   } else {
@@ -513,7 +541,6 @@ function renderHubMarkers() {
   }
 
 }
-
 
 /*************************************************
  * SELECT INDUSTRIAL HUB
