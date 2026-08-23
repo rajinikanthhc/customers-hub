@@ -90,15 +90,12 @@
     Sheet
   </button>
 
-
+  <!-- HUB COUNT -->
   <div class="hub-count">
-
     <span id="hubCount">
       0
     </span>
-
     Industrial Hubs
-
   </div>
 
 </div>
@@ -220,6 +217,75 @@
 
   </aside>
 
+  <!-- ALL CUSTOMERS PANEL -->
+
+<aside
+  id="allCustomersView"
+  class="floating-panel hidden"
+>
+
+  <div class="panel-header">
+
+    <button
+      id="backFromAllCustomers"
+      class="back-button"
+      type="button"
+    >
+      ←
+    </button>
+
+    <div class="selected-hub-heading">
+
+      <div class="panel-title">
+        All Customers
+      </div>
+
+      <div
+        id="allCustomerCount"
+        class="panel-subtitle"
+      >
+        Loading...
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- CUSTOMER SEARCH -->
+
+  <div class="all-customer-search">
+
+    <input
+      id="allCustomerSearch"
+      type="text"
+      placeholder="Search customers..."
+      autocomplete="off"
+    >
+
+    <button
+      id="allCustomerSearchClear"
+      type="button"
+      class="hidden"
+    >
+      ×
+    </button>
+
+  </div>
+
+  <div
+    id="allCustomerLoading"
+    class="loading"
+  >
+    Loading Customers...
+  </div>
+
+  <div
+    id="allCustomerList"
+    class="customer-list"
+  >
+  </div>
+
+</aside>
 
 </main>
 

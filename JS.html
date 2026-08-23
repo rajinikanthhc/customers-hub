@@ -10,6 +10,10 @@ let hubs = [];
 let customers = [];
 let markers = [];
 
+let allCustomers = [];
+
+let customerListMode = 'hub';
+
 let activeHubIndex = -1;
 let activeHub = null;
 let activeCustomer = null;
@@ -28,6 +32,7 @@ window.addEventListener('load', function () {
   addCustomerButton();
   loadTotalCustomerCount();
   setupUniversalSearch();
+setupAllCustomerSearch();
 
 });
 
@@ -52,21 +57,44 @@ function bindEvents() {
 
 
   const backToCustomers =
-    document.getElementById('backToCustomers');
+  document.getElementById(
+    'backToCustomers'
+  );
 
-  if (backToCustomers) {
-backToCustomers.addEventListener(
-  'click',
-  function () {
+if (backToCustomers) {
 
-    showCustomerView();
+  backToCustomers.addEventListener(
+    'click',
+    function() {
 
-    restoreUniversalSearch();
+      document
+        .getElementById(
+          'detailView'
+        )
+        .classList.add('hidden');
 
-  }
-);
-  }
+      if (
+        customerListMode === 'all'
+      ) {
 
+        document
+          .getElementById(
+            'allCustomersView'
+          )
+          .classList.remove('hidden');
+
+      } else {
+
+        showCustomerView();
+
+      }
+
+      restoreUniversalSearch();
+
+    }
+  );
+
+}
 
   const openSheetButton =
     document.getElementById('openSheetButton');
@@ -77,6 +105,30 @@ backToCustomers.addEventListener(
       openSheet
     );
   }
+
+  const backFromAllCustomers =
+  document.getElementById(
+    'backFromAllCustomers'
+  );
+
+if (backFromAllCustomers) {
+
+  backFromAllCustomers.addEventListener(
+    'click',
+    function() {
+
+      document
+        .getElementById(
+          'allCustomersView'
+        )
+        .classList.add('hidden');
+
+      restoreUniversalSearch();
+
+    }
+  );
+
+}
 
 
   const homeButton =
@@ -3859,6 +3911,19 @@ function resetHomeView() {
 
   }
 
+  const allCustomersView =
+  document.getElementById(
+    'allCustomersView'
+  );
+
+if (allCustomersView) {
+
+  allCustomersView.classList.add(
+    'hidden'
+  );
+
+}
+
 
   const detailView =
     document.getElementById(
@@ -4203,6 +4268,27 @@ customerCount.className =
 customerCount.textContent =
   '0 Customers';
 
+customerCount.style.cursor =
+  'pointer';
+
+customerCount.title =
+  'Show All Customers';
+
+customerCount.addEventListener(
+  'click',
+  openAllCustomers
+);
+
+customerCount.title =
+  'Show All Customers';
+
+customerCount.style.cursor =
+  'pointer';
+
+customerCount.addEventListener(
+  'click',
+  openAllCustomers
+);
 
   button.addEventListener(
     'click',
@@ -6381,6 +6467,317 @@ function loadTotalCustomerCount() {
     )
 
     .getTotalCustomerCount();
+
+}
+
+/*************************************************
+ * OPEN ALL CUSTOMERS
+ *************************************************/
+
+function openAllCustomers() {
+
+  customerListMode = 'all';
+
+  const panel =
+    document.getElementById(
+      'allCustomersView'
+    );
+
+  const loading =
+    document.getElementById(
+      'allCustomerLoading'
+    );
+
+  const list =
+    document.getElementById(
+      'allCustomerList'
+    );
+
+  const count =
+    document.getElementById(
+      'allCustomerCount'
+    );
+
+  if (!panel || !list) {
+    return;
+  }
+
+  document
+    .getElementById('customerView')
+    .classList.add('hidden');
+
+  document
+    .getElementById('detailView')
+    .classList.add('hidden');
+
+  panel.classList.remove('hidden');
+
+  if (loading) {
+    loading.classList.remove('hidden');
+  }
+
+  list.innerHTML = '';
+
+  if (count) {
+    count.textContent =
+      'Loading...';
+  }
+
+  const search =
+    document.getElementById(
+      'allCustomerSearch'
+    );
+
+  if (search) {
+    search.value = '';
+  }
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(data) {
+
+        allCustomers =
+          data || [];
+
+        if (loading) {
+          loading.classList.add(
+            'hidden'
+          );
+        }
+
+        if (count) {
+          count.textContent =
+            allCustomers.length +
+            ' Customers';
+        }
+
+        renderAllCustomers();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        if (loading) {
+          loading.classList.add(
+            'hidden'
+          );
+        }
+
+        list.innerHTML =
+          '<div class="loading">' +
+          escapeHtml(
+            getErrorMessage(error)
+          ) +
+          '</div>';
+
+      }
+    )
+
+    .getCustomersByHub('');
+
+}
+
+/*************************************************
+ * RENDER ALL CUSTOMERS
+ *************************************************/
+
+function renderAllCustomers() {
+
+  const list =
+    document.getElementById(
+      'allCustomerList'
+    );
+
+  if (!list) {
+    return;
+  }
+
+  const searchInput =
+    document.getElementById(
+      'allCustomerSearch'
+    );
+
+  const query =
+    searchInput
+      ? searchInput.value
+          .trim()
+          .toLowerCase()
+      : '';
+
+  list.innerHTML = '';
+
+  const filtered =
+    allCustomers.filter(
+      function(customer) {
+
+        if (!query) {
+          return true;
+        }
+
+        const text =
+          [
+            customer.companyId,
+            customer.customerName,
+            customer.industrialArea,
+            customer.industrialHub,
+            customer.city,
+            customer.type,
+            customer.status,
+            customer.potential
+          ]
+            .join(' ')
+            .toLowerCase();
+
+        return text.indexOf(
+          query
+        ) !== -1;
+
+      }
+    );
+
+  if (!filtered.length) {
+
+    list.innerHTML =
+      '<div class="loading">' +
+      'No customers found.' +
+      '</div>';
+
+    return;
+  }
+
+  filtered.forEach(
+    function(customer) {
+
+      const item =
+        document.createElement(
+          'div'
+        );
+
+      item.className =
+        'customer-item';
+
+      item.innerHTML =
+
+        '<div class="customer-name">' +
+          escapeHtml(
+            customer.customerName || '-'
+          ) +
+        '</div>' +
+
+        '<div class="customer-area">' +
+          'Industrial Area: ' +
+          escapeHtml(
+            customer.industrialArea || '-'
+          ) +
+        '</div>' +
+
+        '<div class="customer-city">' +
+          escapeHtml(
+            customer.city || ''
+          ) +
+        '</div>';
+
+      item.addEventListener(
+        'click',
+        function() {
+
+          activeCustomer =
+            customer;
+
+          showAllCustomerDetail();
+
+        }
+      );
+
+      list.appendChild(item);
+
+    }
+  );
+
+}
+
+/*************************************************
+ * SHOW ALL CUSTOMER DETAIL
+ *************************************************/
+
+function showAllCustomerDetail() {
+
+  document
+    .getElementById(
+      'allCustomersView'
+    )
+    .classList.add('hidden');
+
+  renderCustomerDetail();
+
+  showDetailView();
+
+}
+
+/*************************************************
+ * ALL CUSTOMER SEARCH
+ *************************************************/
+
+function setupAllCustomerSearch() {
+
+  const input =
+    document.getElementById(
+      'allCustomerSearch'
+    );
+
+  const clear =
+    document.getElementById(
+      'allCustomerSearchClear'
+    );
+
+  if (!input) {
+    return;
+  }
+
+  input.addEventListener(
+    'input',
+    function() {
+
+      const query =
+        input.value.trim();
+
+      if (clear) {
+
+        clear.classList.toggle(
+          'hidden',
+          !query
+        );
+
+      }
+
+      renderAllCustomers();
+
+    }
+  );
+
+  if (clear) {
+
+    clear.addEventListener(
+      'click',
+      function() {
+
+        input.value = '';
+
+        clear.classList.add(
+          'hidden'
+        );
+
+        renderAllCustomers();
+
+        input.focus();
+
+      }
+    );
+
+  }
 
 }
 

@@ -475,12 +475,14 @@ function getCustomersByHub(hubName) {
         .toLowerCase();
 
 
-    if (rowHub !== wantedHub) {
+    if (
+  wantedHub &&
+  rowHub !== wantedHub
+) {
 
-      continue;
+  continue;
 
-    }
-
+}
 
     customers.push({
 
