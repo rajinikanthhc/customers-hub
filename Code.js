@@ -2703,3 +2703,624 @@ function saveNewCustomerRecord(
   }
 
 }
+
+/*************************************************
+ * UNIVERSAL SEARCH
+ *************************************************/
+
+function universalSearch(
+  query
+) {
+
+  const search =
+    String(
+      query || ''
+    )
+    .trim()
+    .toLowerCase();
+
+
+  if (!search) {
+
+    return [];
+
+  }
+
+
+  const results = [];
+
+
+  /*
+   * INDUSTRIAL HUBS
+   */
+
+  const hubs =
+    getIndustrialHubs();
+
+
+  hubs.forEach(
+    function (hub) {
+
+      const text =
+        [
+          hub.hub,
+          hub.city
+        ]
+        .join(' ')
+        .toLowerCase();
+
+
+      if (
+        text.indexOf(
+          search
+        ) !== -1
+      ) {
+
+        results.push({
+
+          type:
+            'hub',
+
+          name:
+            hub.hub,
+
+          city:
+            hub.city
+
+        });
+
+      }
+
+    }
+  );
+
+
+  /*
+   * CUSTOMERS
+   */
+
+  const customerSheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(
+        CUSTOMERS_SHEET
+      );
+
+
+  if (customerSheet) {
+
+    const data =
+      customerSheet
+        .getDataRange()
+        .getDisplayValues();
+
+
+    if (
+      data.length > 1
+    ) {
+
+      const headers =
+        data[0].map(
+          normalizeHeader
+        );
+
+
+      const companyIdIndex =
+        findHeader(
+          headers,
+          [
+            'company id'
+          ]
+        );
+
+
+      const nameIndex =
+        findHeader(
+          headers,
+          [
+            'customer name'
+          ]
+        );
+
+
+      const areaIndex =
+        findHeader(
+          headers,
+          [
+            'industrial area'
+          ]
+        );
+
+
+      const hubIndex =
+        findHeader(
+          headers,
+          [
+            'industrial hub'
+          ]
+        );
+
+
+      const cityIndex =
+        findHeader(
+          headers,
+          [
+            'city'
+          ]
+        );
+
+
+      const typeIndex =
+        findHeader(
+          headers,
+          [
+            'type'
+          ]
+        );
+
+
+      const statusIndex =
+        findHeader(
+          headers,
+          [
+            'status'
+          ]
+        );
+
+
+      const potentialIndex =
+        findHeader(
+          headers,
+          [
+            'potential'
+          ]
+        );
+
+
+      const websiteIndex =
+        findHeader(
+          headers,
+          [
+            'website'
+          ]
+        );
+
+
+      const notesIndex =
+        findHeader(
+          headers,
+          [
+            'notes'
+          ]
+        );
+
+
+      for (
+        let i = 1;
+        i < data.length;
+        i++
+      ) {
+
+        const row =
+          data[i];
+
+
+        const companyId =
+          getCell(
+            row,
+            companyIdIndex
+          );
+
+
+        const name =
+          getCell(
+            row,
+            nameIndex
+          );
+
+
+        const area =
+          getCell(
+            row,
+            areaIndex
+          );
+
+
+        const hub =
+          getCell(
+            row,
+            hubIndex
+          );
+
+
+        const city =
+          getCell(
+            row,
+            cityIndex
+          );
+
+
+        const type =
+          getCell(
+            row,
+            typeIndex
+          );
+
+
+        const status =
+          getCell(
+            row,
+            statusIndex
+          );
+
+
+        const potential =
+          getCell(
+            row,
+            potentialIndex
+          );
+
+
+        const website =
+          getCell(
+            row,
+            websiteIndex
+          );
+
+
+        const notes =
+          getCell(
+            row,
+            notesIndex
+          );
+
+
+        const searchable =
+          [
+            companyId,
+            name,
+            area,
+            hub,
+            city,
+            type,
+            status,
+            potential,
+            website,
+            notes
+          ]
+          .join(' ')
+          .toLowerCase();
+
+
+        if (
+          searchable.indexOf(
+            search
+          ) !== -1
+        ) {
+
+          results.push({
+
+            type:
+              'customer',
+
+            name:
+              name,
+
+            companyId:
+              companyId,
+
+            industrialArea:
+              area,
+
+            industrialHub:
+              hub,
+
+            city:
+              city
+
+          });
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  /*
+   * PEOPLE
+   */
+
+  const peopleSheet =
+    SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getSheetByName(
+        PEOPLE_SHEET
+      );
+
+
+  if (peopleSheet) {
+
+    const data =
+      peopleSheet
+        .getDataRange()
+        .getDisplayValues();
+
+
+    if (
+      data.length > 1
+    ) {
+
+      const headers =
+        data[0].map(
+          normalizeHeader
+        );
+
+
+      const peopleIdIndex =
+        findHeader(
+          headers,
+          [
+            'people id'
+          ]
+        );
+
+
+      const companyIdIndex =
+        findHeader(
+          headers,
+          [
+            'company id'
+          ]
+        );
+
+
+      const companyIndex =
+        findHeader(
+          headers,
+          [
+            'company'
+          ]
+        );
+
+
+      const nameIndex =
+        findHeader(
+          headers,
+          [
+            'name'
+          ]
+        );
+
+
+      const designationIndex =
+        findHeader(
+          headers,
+          [
+            'designation'
+          ]
+        );
+
+
+      const phoneIndex =
+        findHeader(
+          headers,
+          [
+            'phone'
+          ]
+        );
+
+
+      const emailIndex =
+        findHeader(
+          headers,
+          [
+            'email'
+          ]
+        );
+
+
+      /*
+       * Build Company ID → Hub
+       */
+
+      const companyHubMap =
+        {};
+
+
+      const customerData =
+        customerSheet
+          ? customerSheet
+              .getDataRange()
+              .getDisplayValues()
+          : [];
+
+
+      if (
+        customerData.length > 1
+      ) {
+
+        const customerHeaders =
+          customerData[0].map(
+            normalizeHeader
+          );
+
+
+        const cId =
+          findHeader(
+            customerHeaders,
+            [
+              'company id'
+            ]
+          );
+
+
+        const cHub =
+          findHeader(
+            customerHeaders,
+            [
+              'industrial hub'
+            ]
+          );
+
+
+        for (
+          let i = 1;
+          i < customerData.length;
+          i++
+        ) {
+
+          companyHubMap[
+            getCell(
+              customerData[i],
+              cId
+            ).toLowerCase()
+          ] =
+            getCell(
+              customerData[i],
+              cHub
+            );
+
+        }
+
+      }
+
+
+      for (
+        let i = 1;
+        i < data.length;
+        i++
+      ) {
+
+        const row =
+          data[i];
+
+
+        const peopleId =
+          getCell(
+            row,
+            peopleIdIndex
+          );
+
+
+        const companyId =
+          getCell(
+            row,
+            companyIdIndex
+          );
+
+
+        const company =
+          getCell(
+            row,
+            companyIndex
+          );
+
+
+        const name =
+          getCell(
+            row,
+            nameIndex
+          );
+
+
+        const designation =
+          getCell(
+            row,
+            designationIndex
+          );
+
+
+        const phone =
+          getCell(
+            row,
+            phoneIndex
+          );
+
+
+        const email =
+          getCell(
+            row,
+            emailIndex
+          );
+
+
+        const hub =
+          companyHubMap[
+            companyId.toLowerCase()
+          ] || '';
+
+
+        const searchable =
+          [
+            peopleId,
+            companyId,
+            company,
+            name,
+            designation,
+            phone,
+            email,
+            hub
+          ]
+          .join(' ')
+          .toLowerCase();
+
+
+        if (
+          searchable.indexOf(
+            search
+          ) !== -1
+        ) {
+
+          results.push({
+
+            type:
+              'person',
+
+            name:
+              name,
+
+            peopleId:
+              peopleId,
+
+            companyId:
+              companyId,
+
+            company:
+              company,
+
+            designation:
+              designation,
+
+            phone:
+              phone,
+
+            email:
+              email,
+
+            industrialHub:
+              hub
+
+          });
+
+        }
+
+      }
+
+    }
+
+  }
+
+
+  /*
+   * Keep result list manageable.
+   */
+
+  return results.slice(
+    0,
+    30
+  );
+
+}

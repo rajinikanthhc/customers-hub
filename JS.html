@@ -26,6 +26,7 @@ window.addEventListener('load', function () {
   bindEvents();
   loadApplication();
   addCustomerButton();
+  setupUniversalSearch();
 
 });
 
@@ -78,6 +79,8 @@ function bindEvents() {
       resetHomeView
     );
   }
+
+  setupUniversalSearch(); 
 
 }
 
@@ -4017,6 +4020,753 @@ function saveNewCustomer() {
 
     .saveNewCustomerRecord(
       data
+    );
+
+}
+
+/*************************************************
+ * UNIVERSAL SEARCH
+ *************************************************/
+
+function setupUniversalSearch() {
+
+  const input =
+    document.getElementById(
+      'universalSearch'
+    );
+
+  const clear =
+    document.getElementById(
+      'universalSearchClear'
+    );
+
+  const results =
+    document.getElementById(
+      'universalSearchResults'
+    );
+
+
+  if (
+    !input ||
+    !clear ||
+    !results
+  ) {
+
+    return;
+
+  }
+
+
+  let timer = null;
+
+
+  input.addEventListener(
+    'input',
+    function () {
+
+      const query =
+        input.value.trim();
+
+
+      clear.classList.toggle(
+        'hidden',
+        !query
+      );
+
+
+      clearTimeout(timer);
+
+
+      if (!query) {
+
+        results.innerHTML = '';
+
+        results.classList.add(
+          'hidden'
+        );
+
+        return;
+
+      }
+
+
+      timer =
+        setTimeout(
+          function () {
+
+            performUniversalSearch(
+              query
+            );
+
+          },
+          250
+        );
+
+    }
+  );
+
+
+  clear.addEventListener(
+    'click',
+    function () {
+
+      input.value = '';
+
+      clear.classList.add(
+        'hidden'
+      );
+
+      results.innerHTML = '';
+
+      results.classList.add(
+        'hidden'
+      );
+
+      input.focus();
+
+    }
+  );
+
+
+  document.addEventListener(
+    'click',
+    function (event) {
+
+      const searchBox =
+        document.querySelector(
+          '.universal-search'
+        );
+
+
+      if (
+        searchBox &&
+        !searchBox.contains(
+          event.target
+        )
+      ) {
+
+        results.classList.add(
+          'hidden'
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * PERFORM UNIVERSAL SEARCH
+ *************************************************/
+
+function performUniversalSearch(
+  query
+) {
+
+  const results =
+    document.getElementById(
+      'universalSearchResults'
+    );
+
+
+  if (!results) {
+
+    return;
+
+  }
+
+
+  results.classList.remove(
+    'hidden'
+  );
+
+
+  results.innerHTML =
+
+    '<div class="universal-search-message">' +
+      'Searching...' +
+    '</div>';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (data) {
+
+        renderUniversalSearchResults(
+          data || []
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        results.innerHTML =
+
+          '<div class="universal-search-message">' +
+
+            escapeHtml(
+              getErrorMessage(error)
+            ) +
+
+          '</div>';
+
+      }
+    )
+
+    .universalSearch(
+      query
+    );
+
+}
+
+
+/*************************************************
+ * RENDER SEARCH RESULTS
+ *************************************************/
+
+function renderUniversalSearchResults(
+  data
+) {
+
+  const results =
+    document.getElementById(
+      'universalSearchResults'
+    );
+
+
+  if (!results) {
+
+    return;
+
+  }
+
+
+  results.innerHTML = '';
+
+
+  if (
+    !data ||
+    !data.length
+  ) {
+
+    results.innerHTML =
+
+      '<div class="universal-search-message">' +
+
+        'No results found.' +
+
+      '</div>';
+
+    results.classList.remove(
+      'hidden'
+    );
+
+    return;
+
+  }
+
+
+  data.forEach(
+    function (item) {
+
+      const button =
+        document.createElement(
+          'button'
+        );
+
+
+      button.type =
+        'button';
+
+
+      button.className =
+        'universal-search-result';
+
+
+      let icon =
+        '';
+
+
+      let title =
+        '';
+
+
+      let meta =
+        '';
+
+
+      if (
+        item.type ===
+        'hub'
+      ) {
+
+        icon =
+          'H';
+
+        title =
+          item.name;
+
+        meta =
+          'Industrial Hub · ' +
+          (
+            item.city ||
+            ''
+          );
+
+      }
+
+
+      else if (
+        item.type ===
+        'customer'
+      ) {
+
+        icon =
+          'C';
+
+        title =
+          item.name;
+
+        meta =
+          'Customer · ' +
+          (
+            item.industrialArea ||
+            ''
+          ) +
+          ' · ' +
+          (
+            item.industrialHub ||
+            ''
+          );
+
+      }
+
+
+      else if (
+        item.type ===
+        'person'
+      ) {
+
+        icon =
+          'P';
+
+        title =
+          item.name;
+
+        meta =
+          'Contact · ' +
+          (
+            item.company ||
+            ''
+          ) +
+          (
+            item.designation
+              ? ' · ' +
+                item.designation
+              : ''
+          );
+
+      }
+
+
+      button.innerHTML =
+
+        '<span class="search-result-icon">' +
+
+          escapeHtml(
+            icon
+          ) +
+
+        '</span>' +
+
+        '<span class="search-result-text">' +
+
+          '<span class="search-result-title">' +
+
+            escapeHtml(
+              title ||
+              '-'
+            ) +
+
+          '</span>' +
+
+          '<span class="search-result-meta">' +
+
+            escapeHtml(
+              meta
+            ) +
+
+          '</span>' +
+
+        '</span>';
+
+
+      button.addEventListener(
+        'click',
+        function () {
+
+          clearUniversalSearch();
+
+          openUniversalSearchResult(
+            item
+          );
+
+        }
+      );
+
+
+      results.appendChild(
+        button
+      );
+
+    }
+  );
+
+
+  results.classList.remove(
+    'hidden'
+  );
+
+}
+
+
+/*************************************************
+ * CLEAR SEARCH
+ *************************************************/
+
+function clearUniversalSearch() {
+
+  const input =
+    document.getElementById(
+      'universalSearch'
+    );
+
+  const clear =
+    document.getElementById(
+      'universalSearchClear'
+    );
+
+  const results =
+    document.getElementById(
+      'universalSearchResults'
+    );
+
+
+  if (input) {
+
+    input.value = '';
+
+  }
+
+
+  if (clear) {
+
+    clear.classList.add(
+      'hidden'
+    );
+
+  }
+
+
+  if (results) {
+
+    results.innerHTML = '';
+
+    results.classList.add(
+      'hidden'
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * OPEN SEARCH RESULT
+ *************************************************/
+
+function openUniversalSearchResult(
+  item
+) {
+
+  if (!item) {
+
+    return;
+
+  }
+
+
+  /*
+   * INDUSTRIAL HUB
+   */
+
+  if (
+    item.type ===
+    'hub'
+  ) {
+
+    const index =
+      hubs.findIndex(
+        function (hub) {
+
+          return String(
+            hub.hub || ''
+          )
+          .trim()
+          .toLowerCase() ===
+
+          String(
+            item.name || ''
+          )
+          .trim()
+          .toLowerCase();
+
+        }
+      );
+
+
+    if (
+      index !== -1
+    ) {
+
+      selectHub(
+        index
+      );
+
+    }
+
+
+    return;
+
+  }
+
+
+  /*
+   * CUSTOMER
+   */
+
+  if (
+    item.type ===
+    'customer'
+  ) {
+
+    openSearchCustomer(
+      item
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * CONTACT PERSON
+   */
+
+  if (
+    item.type ===
+    'person'
+  ) {
+
+    openSearchPerson(
+      item
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * OPEN SEARCH CUSTOMER
+ *************************************************/
+
+function openSearchCustomer(
+  item
+) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (data) {
+
+        customers =
+          data || [];
+
+
+        const index =
+          customers.findIndex(
+            function (customer) {
+
+              return String(
+                getField(
+                  customer,
+                  [
+                    'companyId',
+                    'Company ID'
+                  ]
+                )
+              ).trim() ===
+
+              String(
+                item.companyId
+              ).trim();
+
+            }
+          );
+
+
+        if (
+          index === -1
+        ) {
+
+          showError(
+            'Customer not found.'
+          );
+
+          return;
+
+        }
+
+
+        activeHub =
+          hubs.find(
+            function (hub) {
+
+              return String(
+                hub.hub || ''
+              )
+              .trim()
+              .toLowerCase() ===
+
+              String(
+                item.industrialHub || ''
+              )
+              .trim()
+              .toLowerCase();
+
+            }
+          ) || null;
+
+
+        if (activeHub) {
+
+          activeHubIndex =
+            hubs.indexOf(
+              activeHub
+            );
+
+        }
+
+
+        renderCustomerList();
+
+        selectCustomer(
+          index
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        showError(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .getCustomersByHub(
+      item.industrialHub
+    );
+
+}
+
+
+/*************************************************
+ * OPEN SEARCH PERSON
+ *************************************************/
+
+function openSearchPerson(
+  item
+) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (customer) {
+
+        if (!customer) {
+
+          showError(
+            'Customer for this contact was not found.'
+          );
+
+          return;
+
+        }
+
+
+        activeCustomer =
+          customer;
+
+
+        activeHub =
+          hubs.find(
+            function (hub) {
+
+              return String(
+                hub.hub || ''
+              )
+              .trim()
+              .toLowerCase() ===
+
+              String(
+                item.industrialHub || ''
+              )
+              .trim()
+              .toLowerCase();
+
+            }
+          ) || null;
+
+
+        if (activeHub) {
+
+          activeHubIndex =
+            hubs.indexOf(
+              activeHub
+            );
+
+        }
+
+
+        renderCustomerDetail();
+
+        showDetailView();
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        showError(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .getCustomerByCompanyId(
+      item.companyId
     );
 
 }
