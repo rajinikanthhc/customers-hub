@@ -862,3 +862,11 @@ function findHeader(headers, names) {
   return -1;
 
 }
+
+function getSpreadsheetUrl() {
+
+  return SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getUrl();
+
+}

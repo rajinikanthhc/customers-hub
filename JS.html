@@ -53,6 +53,13 @@ function bindEvents() {
       showCustomerView
     );
 
+    document
+    .getElementById('openSheetButton')
+    .addEventListener(
+      'click',
+      openSheet
+    );
+
 }
 
 
@@ -844,14 +851,10 @@ function selectCustomer(index) {
 
 function renderCustomerDetail() {
 
-  const customer =
-    activeCustomer;
-
+  const customer = activeCustomer;
 
   const detail =
-    document.getElementById(
-      'customerDetail'
-    );
+    document.getElementById('customerDetail');
 
 
   if (!customer) {
@@ -863,158 +866,282 @@ function renderCustomerDetail() {
   }
 
 
+  /*
+   * Read customer fields
+   */
+
+  const companyId =
+    getField(customer, [
+      'companyId',
+      'Company ID',
+      'company_id'
+    ]);
+
+
+  const customerName =
+    getField(customer, [
+      'customerName',
+      'Customer Name',
+      'customer_name',
+      'Company',
+      'company'
+    ]);
+
+
+  const type =
+    getField(customer, [
+      'type',
+      'Type'
+    ]);
+
+
+  const status =
+    getField(customer, [
+      'status',
+      'Status'
+    ]);
+
+
+  const potential =
+    getField(customer, [
+      'potential',
+      'Potential'
+    ]);
+
+
+  const notes =
+    getField(customer, [
+      'notes',
+      'Notes'
+    ]);
+
+
+  const website =
+    getField(customer, [
+      'website',
+      'Website'
+    ]);
+
+
   let html = '';
 
 
-  html +=
-
-    '<div class="detail-company-id">' +
-
-      'Company ID: ' +
-
-      escapeHtml(
-        customer.companyId
-      ) +
-
-    '</div>';
-
+  /**********************************************
+   * CUSTOMER NAME
+   **********************************************/
 
   html +=
-
     '<div class="detail-company-name">' +
-
       escapeHtml(
-        customer.customerName
+        customerName || '-'
       ) +
-
     '</div>';
 
 
+  /**********************************************
+   * COMPANY ID
+   **********************************************/
+
   html +=
-
-    '<div class="detail-grid">';
-
-
-  html += detailCard(
-    'Industrial Area',
-    customer.industrialArea
-  );
+    '<div class="detail-company-id">' +
+      'Company ID: ' +
+      escapeHtml(
+        companyId || '-'
+      ) +
+    '</div>';
 
 
-  html += detailCard(
-    'Industrial Hub',
-    customer.industrialHub
-  );
+  /**********************************************
+   * CUSTOMER INFORMATION
+   **********************************************/
+
+  html +=
+    '<div class="customer-info">';
 
 
-  html += detailCard(
-    'City',
-    customer.city
-  );
-
-
-  html += detailCard(
+  html += customerInfoItem(
     'Type',
-    customer.type
+    type
   );
 
 
-  html += detailCard(
+  html += customerInfoItem(
     'Status',
-    customer.status
+    status
   );
 
 
-  html += detailCard(
+  html += customerInfoItem(
     'Potential',
-    customer.potential
+    formatPotential(potential)
   );
 
 
-  html += '</div>';
+  html += customerInfoItem(
+    'Notes',
+    notes
+  );
 
 
-  /*
-   * Website.
-   */
+  html +=
+    '</div>';
 
-  if (customer.website) {
+
+  /**********************************************
+   * WEBSITE
+   **********************************************/
+
+  if (website) {
 
     html +=
-
       '<a class="website-link" ' +
-
       'href="' +
-
       escapeAttribute(
-        normalizeUrl(
-          customer.website
-        )
+        normalizeUrl(website)
       ) +
-
-      '" target="_blank">' +
-
+      '" ' +
+      'target="_blank">' +
       'Visit Website' +
-
       '</a>';
 
   }
 
 
-  /*
-   * Notes.
-   */
-
-  if (customer.notes) {
-
-    html +=
-
-      '<div class="notes">' +
-
-        '<strong>Notes</strong><br>' +
-
-        escapeHtml(
-          customer.notes
-        ) +
-
-      '</div>';
-
-  }
-
-
-  /*
-   * People.
-   */
+  /**********************************************
+   * PEOPLE
+   **********************************************/
 
   html +=
-
     '<div class="people-heading">' +
-
       'People' +
+    '</div>';
 
-    '</div>' +
 
+  html +=
     '<div id="peopleList">' +
 
       '<div class="loading">' +
-
         'Loading contacts...' +
-
       '</div>' +
 
     '</div>';
 
 
-  detail.innerHTML =
-    html;
+  detail.innerHTML = html;
 
 
-  loadPeople(
-    customer.companyId
+  /**********************************************
+   * LOAD CONTACTS
+   **********************************************/
+
+  loadPeople(companyId);
+
+}
+
+function getField(obj, possibleNames) {
+
+  if (!obj) {
+    return '';
+  }
+
+
+  const keys =
+    Object.keys(obj);
+
+
+  for (
+    let i = 0;
+    i < possibleNames.length;
+    i++
+  ) {
+
+    const wanted =
+      String(
+        possibleNames[i]
+      )
+      .trim()
+      .toLowerCase();
+
+
+    for (
+      let j = 0;
+      j < keys.length;
+      j++
+    ) {
+
+      const actual =
+        String(keys[j])
+          .trim()
+          .toLowerCase();
+
+
+      if (actual === wanted) {
+
+        return obj[keys[j]];
+
+      }
+
+    }
+
+  }
+
+
+  return '';
+
+}
+
+function customerInfoItem(label, value) {
+
+  return (
+
+    '<div class="customer-info-item">' +
+
+      '<div class="customer-info-label">' +
+        escapeHtml(label) +
+      '</div>' +
+
+      '<div class="customer-info-value">' +
+        escapeHtml(value || '-') +
+      '</div>' +
+
+    '</div>'
+
   );
 
 }
 
+function formatPotential(value) {
+
+  if (
+    value === null ||
+    value === undefined ||
+    value === ''
+  ) {
+
+    return '-';
+
+  }
+
+
+  const number =
+    Number(
+      String(value)
+        .replace(/,/g, '')
+        .replace(/₹/g, '')
+    );
+
+
+  if (!isNaN(number)) {
+
+    return '₹' +
+      number.toLocaleString('en-IN');
+
+  }
+
+
+  return String(value);
+
+}
 
 /*************************************************
  * DETAIL CARD
@@ -1054,47 +1181,47 @@ function detailCard(
  * LOAD PEOPLE
  *************************************************/
 
-function loadPeople(
-  companyId
-) {
+function loadPeople(companyId) {
 
   google.script.run
 
-    .withSuccessHandler(
-      function (people) {
+    .withSuccessHandler(function (people) {
 
-        renderPeople(
-          people || []
+      console.log(
+        'People returned:',
+        people
+      );
+
+      renderPeople(
+        people || []
+      );
+
+    })
+
+    .withFailureHandler(function (error) {
+
+      console.error(
+        'People error:',
+        error
+      );
+
+
+      const container =
+        document.getElementById(
+          'peopleList'
         );
 
-      }
-    )
 
-    .withFailureHandler(
-      function (error) {
+      if (container) {
 
-        const container =
-          document.getElementById(
-            'peopleList'
-          );
-
-
-        if (container) {
-
-          container.innerHTML =
-
-            '<div class="loading">' +
-
-              escapeHtml(
-                getErrorMessage(error)
-              ) +
-
-            '</div>';
-
-        }
+        container.innerHTML =
+          '<div class="no-contacts">' +
+            'Unable to load contact details.' +
+          '</div>';
 
       }
-    )
+
+    })
 
     .getPeopleByCompanyId(
       companyId
@@ -1102,14 +1229,11 @@ function loadPeople(
 
 }
 
-
 /*************************************************
  * RENDER PEOPLE
  *************************************************/
 
-function renderPeople(
-  people
-) {
+function renderPeople(people) {
 
   const container =
     document.getElementById(
@@ -1118,17 +1242,15 @@ function renderPeople(
 
 
   if (!container) {
-
     return;
-
   }
 
 
-  if (!people.length) {
+  if (!people || !people.length) {
 
     container.innerHTML =
-      '<div class="loading">' +
-      'No contact details available.' +
+      '<div class="no-contacts">' +
+        'No contact details available.' +
       '</div>';
 
     return;
@@ -1139,138 +1261,144 @@ function renderPeople(
   container.innerHTML = '';
 
 
-  people.forEach(
-    function (person) {
+  people.forEach(function(person) {
 
-      const card =
-        document.createElement(
-          'div'
-        );
-
-
-      card.className =
-        'person-card';
+    const name =
+      getField(person, [
+        'name',
+        'Name'
+      ]);
 
 
-      let html = '';
+    const designation =
+      getField(person, [
+        'designation',
+        'Designation'
+      ]);
 
+
+    const phone =
+      getField(person, [
+        'phone',
+        'Phone'
+      ]);
+
+
+    const email =
+      getField(person, [
+        'email',
+        'Email'
+      ]);
+
+
+    const visitingCard =
+      getField(person, [
+        'visitingCardUrl',
+        'visitingCard',
+        'Visiting Card',
+        'photo',
+        'Photo'
+      ]);
+
+
+    const card =
+      document.createElement('div');
+
+
+    card.className =
+      'person-card';
+
+
+    let html = '';
+
+
+    html +=
+      '<div class="person-name">' +
+        escapeHtml(name || '-') +
+      '</div>';
+
+
+    if (designation) {
 
       html +=
+        '<div class="person-designation">' +
+          escapeHtml(designation) +
+        '</div>';
 
-        '<div class="person-name">' +
+    }
 
-          escapeHtml(
-            person.name
-          ) +
+
+    if (phone) {
+
+      html +=
+        '<div class="person-row">' +
+
+          '<span class="contact-label">' +
+            'Phone' +
+          '</span>' +
+
+          '<a href="tel:' +
+            escapeAttribute(phone) +
+          '">' +
+
+            escapeHtml(phone) +
+
+          '</a>' +
 
         '</div>';
 
-
-      if (person.designation) {
-
-        html +=
-
-          '<div class="person-designation">' +
-
-            escapeHtml(
-              person.designation
-            ) +
-
-          '</div>';
-
-      }
+    }
 
 
-      if (person.phone) {
+    if (email) {
 
-        html +=
+      html +=
+        '<div class="person-row">' +
 
-          '<div class="person-row">' +
+          '<span class="contact-label">' +
+            'Email' +
+          '</span>' +
 
-            '📞 ' +
+          '<a href="mailto:' +
+            escapeAttribute(email) +
+          '">' +
 
-            '<a href="tel:' +
+            escapeHtml(email) +
 
-              escapeAttribute(
-                person.phone
-              ) +
+          '</a>' +
 
-            '">' +
-
-              escapeHtml(
-                person.phone
-              ) +
-
-            '</a>' +
-
-          '</div>';
-
-      }
-
-
-      if (person.email) {
-
-        html +=
-
-          '<div class="person-row">' +
-
-            '✉ ' +
-
-            '<a href="mailto:' +
-
-              escapeAttribute(
-                person.email
-              ) +
-
-            '">' +
-
-              escapeHtml(
-                person.email
-              ) +
-
-            '</a>' +
-
-          '</div>';
-
-      }
-
-
-      if (person.visitingCardUrl) {
-
-        html +=
-
-          '<a class="visiting-card" ' +
-
-            'href="' +
-
-              escapeAttribute(
-                person.visitingCardUrl
-              ) +
-
-            '" ' +
-
-            'target="_blank">' +
-
-            'Visiting Card' +
-
-          '</a>';
-
-      }
-
-
-      card.innerHTML =
-        html;
-
-
-      container.appendChild(
-        card
-      );
+        '</div>';
 
     }
-  );
+
+
+    if (visitingCard) {
+
+      html +=
+        '<a class="visiting-card" ' +
+        'href="' +
+          escapeAttribute(
+            normalizeUrl(visitingCard)
+          ) +
+        '" ' +
+        'target="_blank">' +
+
+        'View Visiting Card' +
+
+        '</a>';
+
+    }
+
+
+    card.innerHTML =
+      html;
+
+
+    container.appendChild(card);
+
+  });
 
 }
-
 
 /*************************************************
  * SHOW CUSTOMER PANEL
@@ -1576,6 +1704,35 @@ function getErrorMessage(error) {
     error.message ||
     'Unknown error.'
   );
+
+}
+
+function openSheet() {
+
+  google.script.run
+
+    .withSuccessHandler(function(url) {
+
+      if (url) {
+
+        window.open(
+          url,
+          '_blank'
+        );
+
+      }
+
+    })
+
+    .withFailureHandler(function(error) {
+
+      showError(
+        getErrorMessage(error)
+      );
+
+    })
+
+    .getSpreadsheetUrl();
 
 }
 
