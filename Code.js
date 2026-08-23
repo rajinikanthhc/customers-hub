@@ -740,9 +740,9 @@ function getPeopleByCompanyId(companyId) {
         photoName,
 
       visitingCardUrl:
-        getDriveFileUrl(
-          photoName
-        )
+  getGitHubImageUrl(
+    photoName
+  )
 
     });
 
@@ -752,50 +752,6 @@ function getPeopleByCompanyId(companyId) {
   return people;
 
 }
-
-
-/*************************************************
- * GET DRIVE FILE URL
- *************************************************/
-
-function getDriveFileUrl(fileName) {
-
-  if (!fileName) {
-
-    return '';
-
-  }
-
-
-  try {
-
-    const files =
-      DriveApp.getFilesByName(
-        fileName
-      );
-
-
-    if (files.hasNext()) {
-
-      const file =
-        files.next();
-
-
-      return file.getUrl();
-
-    }
-
-  } catch (error) {
-
-    return '';
-
-  }
-
-
-  return '';
-
-}
-
 
 /*************************************************
  * CELL VALUE
@@ -1073,7 +1029,7 @@ function getCustomerById(companyId) {
 
 /*************************************************
  * SAVE PERSON
- * ADD / EDIT CONTACT + VISITING CARD
+ * GOOGLE SHEET + GITHUB VISITING CARD
  *************************************************/
 
 function savePersonRecord(
@@ -1085,12 +1041,8 @@ function savePersonRecord(
   const ss =
     SpreadsheetApp.getActiveSpreadsheet();
 
-
   const sheet =
-    ss.getSheetByName(
-      PEOPLE_SHEET
-    );
-
+    ss.getSheetByName(PEOPLE_SHEET);
 
   if (!sheet) {
 
@@ -1107,16 +1059,23 @@ function savePersonRecord(
       .getValues();
 
 
-  const headers =
-    values[0].map(
-      function (h) {
+  if (!values.length) {
 
-        return String(h)
-          .trim()
-          .toLowerCase();
-
-      }
+    throw new Error(
+      'People sheet is empty.'
     );
+
+  }
+
+
+  const headers =
+    values[0].map(function(h) {
+
+      return String(h)
+        .trim()
+        .toLowerCase();
+
+    });
 
 
   const idColumn =
@@ -1138,7 +1097,7 @@ function savePersonRecord(
 
 
   /*
-   * Find existing person
+   * EDIT EXISTING PERSON
    */
 
   if (peopleId) {
@@ -1171,7 +1130,7 @@ function savePersonRecord(
 
 
   /*
-   * Create new person
+   * ADD NEW PERSON
    */
 
   if (row === -1) {
@@ -1196,33 +1155,21 @@ function savePersonRecord(
         peopleId
       );
 
-
-    const companyColumn =
-      headers.indexOf(
-        'company id'
-      );
-
-
-    if (
-      companyColumn !== -1
-    ) {
-
-      sheet
-        .getRange(
-          row,
-          companyColumn + 1
-        )
-        .setValue(
-          companyId
-        );
-
-    }
-
   }
 
 
   /*
-   * Existing photo filename
+   * GET COMPANY NAME
+   */
+
+  const companyName =
+    getCompanyNameById(
+      companyId
+    );
+
+
+  /*
+   * GET EXISTING PHOTO
    */
 
   const photoColumn =
@@ -1231,7 +1178,8 @@ function savePersonRecord(
     );
 
 
-  let oldPhotoName = '';
+  let oldPhoto =
+    '';
 
 
   if (
@@ -1239,7 +1187,7 @@ function savePersonRecord(
     row <= sheet.getLastRow()
   ) {
 
-    oldPhotoName =
+    oldPhoto =
       String(
         sheet
           .getRange(
@@ -1254,11 +1202,11 @@ function savePersonRecord(
 
 
   /*
-   * Handle uploaded visiting card
+   * HANDLE NEW VISITING CARD
    */
 
-  let finalPhotoName =
-    oldPhotoName;
+  let finalPhoto =
+    oldPhoto;
 
 
   if (
@@ -1266,39 +1214,27 @@ function savePersonRecord(
     data.photoFile.base64
   ) {
 
-    finalPhotoName =
-      saveVisitingCardImage(
-        peopleId,
+    finalPhoto =
+      uploadVisitingCardToGitHub(
+        data.name,
         data.photoFile,
-        oldPhotoName
+        oldPhoto
       );
 
   }
 
 
   /*
-   * If no new image was uploaded,
-   * retain existing filename.
-   */
-
-  if (
-    !finalPhotoName &&
-    data.photo
-  ) {
-
-    finalPhotoName =
-      String(
-        data.photo
-      ).trim();
-
-  }
-
-
-  /*
-   * Save normal People fields
+   * SAVE SHEET FIELDS
    */
 
   const fields = {
+
+    'company id':
+      companyId,
+
+    'company':
+      companyName,
 
     'name':
       data.name,
@@ -1313,41 +1249,159 @@ function savePersonRecord(
       data.email,
 
     'photo':
-      finalPhotoName
+      finalPhoto
 
   };
 
 
   Object.keys(fields)
-    .forEach(
-      function (header) {
+    .forEach(function(header) {
 
-        const column =
-          headers.indexOf(
-            header
+      const column =
+        headers.indexOf(
+          header
+        );
+
+
+      if (
+        column !== -1
+      ) {
+
+        sheet
+          .getRange(
+            row,
+            column + 1
+          )
+          .setValue(
+            fields[header]
           );
 
-
-        if (
-          column !== -1
-        ) {
-
-          sheet
-            .getRange(
-              row,
-              column + 1
-            )
-            .setValue(
-              fields[header]
-            );
-
-        }
-
       }
-    );
+
+    });
 
 
   return true;
+
+}
+
+/*************************************************
+ * GET COMPANY NAME BY COMPANY ID
+ *************************************************/
+
+function getCompanyNameById(
+  companyId
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+
+  const sheet =
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
+
+
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+
+  const data =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+
+  if (
+    data.length < 2
+  ) {
+
+    return '';
+
+  }
+
+
+  const headers =
+    data[0].map(
+      normalizeHeader
+    );
+
+
+  const idIndex =
+    findHeader(
+      headers,
+      [
+        'company id',
+        'companyid'
+      ]
+    );
+
+
+  const nameIndex =
+    findHeader(
+      headers,
+      [
+        'customer name',
+        'customername'
+      ]
+    );
+
+
+  if (
+    idIndex === -1 ||
+    nameIndex === -1
+  ) {
+
+    throw new Error(
+      'Customers sheet must contain Company ID and Customer Name.'
+    );
+
+  }
+
+
+  const wantedId =
+    String(
+      companyId || ''
+    )
+      .trim()
+      .toLowerCase();
+
+
+  for (
+    let i = 1;
+    i < data.length;
+    i++
+  ) {
+
+    const rowId =
+      String(
+        data[i][idIndex] || ''
+      )
+      .trim()
+      .toLowerCase();
+
+
+    if (
+      rowId === wantedId
+    ) {
+
+      return String(
+        data[i][nameIndex] || ''
+      ).trim();
+
+    }
+
+  }
+
+
+  return '';
 
 }
 
@@ -1736,4 +1790,571 @@ function getSettingsOptions() {
   );
 
   return result;
+}
+
+/*************************************************
+ * GITHUB TOKEN
+ * API Key sheet A3
+ *************************************************/
+
+function getGitHubToken() {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+
+  const sheet =
+    ss.getSheetByName(
+      API_KEY_SHEET
+    );
+
+
+  if (!sheet) {
+
+    throw new Error(
+      'API Key sheet not found.'
+    );
+
+  }
+
+
+  const token =
+    String(
+      sheet
+        .getRange('A3')
+        .getDisplayValue() ||
+      ''
+    ).trim();
+
+
+  if (!token) {
+
+    throw new Error(
+      'GitHub token not found in API Key!A3.'
+    );
+
+  }
+
+
+  return token;
+
+}
+
+/*************************************************
+ * GITHUB SETTINGS
+ *************************************************/
+
+const GITHUB_OWNER =
+  'rajinikanthhc';
+
+const GITHUB_REPO =
+  'images';
+
+const GITHUB_BRANCH =
+  'main';
+
+const GITHUB_FOLDER =
+  'visiting-cards';
+
+
+/*************************************************
+ * UPLOAD / UPDATE VISITING CARD
+ *************************************************/
+
+function uploadVisitingCardToGitHub(
+  contactName,
+  fileData,
+  oldPhotoName
+) {
+
+  if (
+    !contactName
+  ) {
+
+    throw new Error(
+      'Contact name is required before uploading the visiting card.'
+    );
+
+  }
+
+
+  if (
+    !fileData ||
+    !fileData.base64
+  ) {
+
+    return oldPhotoName || '';
+
+  }
+
+
+  const token =
+    getGitHubToken();
+
+
+  /*
+   * Clean contact name.
+   */
+
+  const cleanName =
+    String(
+      contactName
+    )
+      .trim()
+      .replace(
+        /[\\/:*?"<>|]/g,
+        ''
+      )
+      .replace(
+        /\s+/g,
+        ' '
+      );
+
+
+  if (!cleanName) {
+
+    throw new Error(
+      'Invalid contact name.'
+    );
+
+  }
+
+
+  /*
+   * Get extension from uploaded file.
+   */
+
+  let extension =
+    'png';
+
+
+  const originalName =
+    String(
+      fileData.fileName ||
+      ''
+    );
+
+
+  const match =
+    originalName.match(
+      /\.([a-zA-Z0-9]+)$/
+    );
+
+
+  if (match) {
+
+    extension =
+      match[1]
+        .toLowerCase();
+
+  }
+
+
+  /*
+   * Keep only common image extensions.
+   */
+
+  const allowed =
+    [
+      'jpg',
+      'jpeg',
+      'png',
+      'webp'
+    ];
+
+
+  if (
+    allowed.indexOf(
+      extension
+    ) === -1
+  ) {
+
+    extension =
+      'png';
+
+  }
+
+
+  /*
+   * Final filename.
+   *
+   * Example:
+   * Rajinikanth H C.png
+   */
+
+  const newFileName =
+    cleanName +
+    '.' +
+    extension;
+
+
+  /*
+   * If an old filename exists
+   * and it is different, remove it.
+   */
+
+  if (
+    oldPhotoName &&
+    oldPhotoName !==
+      newFileName
+  ) {
+
+    deleteGitHubFile(
+      oldPhotoName,
+      token
+    );
+
+  }
+
+
+  /*
+   * Upload / update new file.
+   */
+
+  const existing =
+    getGitHubFile(
+      newFileName,
+      token
+    );
+
+
+  const url =
+    getGitHubContentsUrl(
+      newFileName
+    );
+
+
+  const payload = {
+
+    message:
+      existing
+        ? 'Update visiting card - ' +
+          newFileName
+        : 'Add visiting card - ' +
+          newFileName,
+
+    content:
+      fileData.base64,
+
+    branch:
+      GITHUB_BRANCH
+
+  };
+
+
+  if (
+    existing &&
+    existing.sha
+  ) {
+
+    payload.sha =
+      existing.sha;
+
+  }
+
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+
+        method:
+          'put',
+
+        contentType:
+          'application/json',
+
+        headers: {
+
+          Authorization:
+            'Bearer ' +
+            token,
+
+          Accept:
+            'application/vnd.github+json',
+
+          'X-GitHub-Api-Version':
+            '2022-11-28'
+
+        },
+
+        payload:
+          JSON.stringify(
+            payload
+          ),
+
+        muteHttpExceptions:
+          true
+
+      }
+    );
+
+
+  const code =
+    response.getResponseCode();
+
+
+  const body =
+    response.getContentText();
+
+
+  if (
+    code !== 200 &&
+    code !== 201
+  ) {
+
+    throw new Error(
+      'GitHub upload failed (' +
+      code +
+      '): ' +
+      body
+    );
+
+  }
+
+
+  return newFileName;
+
+}
+
+/*************************************************
+ * GITHUB CONTENTS URL
+ *************************************************/
+
+function getGitHubContentsUrl(
+  fileName
+) {
+
+  return (
+    'https://api.github.com/repos/' +
+    GITHUB_OWNER +
+    '/' +
+    GITHUB_REPO +
+    '/contents/' +
+    GITHUB_FOLDER +
+    '/' +
+    encodeURIComponent(
+      fileName
+    )
+  );
+
+}
+
+
+/*************************************************
+ * GET EXISTING GITHUB FILE
+ *************************************************/
+
+function getGitHubFile(
+  fileName,
+  token
+) {
+
+  const url =
+    getGitHubContentsUrl(
+      fileName
+    );
+
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+
+        method:
+          'get',
+
+        headers: {
+
+          Authorization:
+            'Bearer ' +
+            token,
+
+          Accept:
+            'application/vnd.github+json',
+
+          'X-GitHub-Api-Version':
+            '2022-11-28'
+
+        },
+
+        muteHttpExceptions:
+          true
+
+      }
+    );
+
+
+  const code =
+    response.getResponseCode();
+
+
+  if (
+    code === 404
+  ) {
+
+    return null;
+
+  }
+
+
+  if (
+    code !== 200
+  ) {
+
+    throw new Error(
+      'Unable to check GitHub file: ' +
+      response.getContentText()
+    );
+
+  }
+
+
+  return JSON.parse(
+    response.getContentText()
+  );
+
+}
+
+
+/*************************************************
+ * DELETE OLD GITHUB FILE
+ *************************************************/
+
+function deleteGitHubFile(
+  fileName,
+  token
+) {
+
+  if (!fileName) {
+
+    return;
+
+  }
+
+
+  const existing =
+    getGitHubFile(
+      fileName,
+      token
+    );
+
+
+  if (
+    !existing ||
+    !existing.sha
+  ) {
+
+    return;
+
+  }
+
+
+  const url =
+    getGitHubContentsUrl(
+      fileName
+    );
+
+
+  const payload = {
+
+    message:
+      'Remove old visiting card - ' +
+      fileName,
+
+    sha:
+      existing.sha,
+
+    branch:
+      GITHUB_BRANCH
+
+  };
+
+
+  const response =
+    UrlFetchApp.fetch(
+      url,
+      {
+
+        method:
+          'delete',
+
+        contentType:
+          'application/json',
+
+        headers: {
+
+          Authorization:
+            'Bearer ' +
+            token,
+
+          Accept:
+            'application/vnd.github+json',
+
+          'X-GitHub-Api-Version':
+            '2022-11-28'
+
+        },
+
+        payload:
+          JSON.stringify(
+            payload
+          ),
+
+        muteHttpExceptions:
+          true
+
+      }
+    );
+
+
+  const code =
+    response.getResponseCode();
+
+
+  if (
+    code !== 200
+  ) {
+
+    throw new Error(
+      'Unable to delete old GitHub visiting card: ' +
+      response.getContentText()
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * GITHUB RAW IMAGE URL
+ *************************************************/
+
+function getGitHubImageUrl(
+  fileName
+) {
+
+  if (!fileName) {
+
+    return '';
+
+  }
+
+
+  return (
+    'https://raw.githubusercontent.com/' +
+    GITHUB_OWNER +
+    '/' +
+    GITHUB_REPO +
+    '/' +
+    GITHUB_BRANCH +
+    '/' +
+    GITHUB_FOLDER +
+    '/' +
+    encodeURIComponent(
+      fileName
+    )
+  );
+
 }

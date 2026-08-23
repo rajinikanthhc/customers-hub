@@ -1504,21 +1504,36 @@ function renderPeople(
 
         html +=
 
-          '<a class="visiting-card" ' +
-
-            'href="' +
+          '<button ' +
+            'type="button" ' +
+            'class="visiting-card" ' +
+            'onclick="toggleVisitingCard(this)" ' +
+            'data-card-url="' +
               escapeAttribute(
                 normalizeUrl(
                   visitingCard
                 )
               ) +
-            '"' +
-
-            'target="_blank">' +
+            '">' +
 
             'View Visiting Card' +
 
-          '</a>';
+          '</button>' +
+
+          '<div class="visiting-card-preview hidden">' +
+
+            '<img ' +
+              'src="' +
+                escapeAttribute(
+                  normalizeUrl(
+                    visitingCard
+                  )
+                ) +
+              '" ' +
+              'alt="Visiting Card" ' +
+              'loading="lazy">' +
+
+          '</div>';
 
       }
 
@@ -1533,6 +1548,44 @@ function renderPeople(
 
     }
   );
+
+}
+
+
+/*************************************************
+ * TOGGLE VISITING CARD
+ *************************************************/
+
+function toggleVisitingCard(button) {
+
+  if (!button) {
+    return;
+  }
+
+  const preview =
+    button.nextElementSibling;
+
+  if (!preview) {
+    return;
+  }
+
+  if (
+    preview.classList.contains('hidden')
+  ) {
+
+    preview.classList.remove('hidden');
+
+    button.textContent =
+      'Hide Visiting Card';
+
+  } else {
+
+    preview.classList.add('hidden');
+
+    button.textContent =
+      'View Visiting Card';
+
+  }
 
 }
 
@@ -2768,13 +2821,13 @@ function savePerson() {
 
 
   /*
-   * No new image selected.
+   * No new image.
    * Keep existing card.
    */
 
   if (!file) {
 
-    savePersonData(
+    sendPersonToServer(
       peopleId,
       companyId,
       data,
@@ -2792,7 +2845,9 @@ function savePerson() {
 
   if (
     !file.type ||
-    !file.type.startsWith('image/')
+    !file.type.startsWith(
+      'image/'
+    )
   ) {
 
     button.disabled =
@@ -2811,7 +2866,7 @@ function savePerson() {
 
 
   /*
-   * Limit image size to 5 MB.
+   * Maximum 5 MB.
    */
 
   if (
@@ -2842,12 +2897,13 @@ function savePerson() {
     function () {
 
       const result =
-        reader.result;
+        String(
+          reader.result
+        );
 
 
       const base64 =
-        String(result)
-          .split(',')[1];
+        result.split(',')[1];
 
 
       data.photoFile = {
@@ -2864,7 +2920,7 @@ function savePerson() {
       };
 
 
-      savePersonData(
+      sendPersonToServer(
         peopleId,
         companyId,
         data,
@@ -2896,6 +2952,56 @@ function savePerson() {
 
 }
 
+
+/*************************************************
+ * SEND PERSON TO SERVER
+ *************************************************/
+
+function sendPersonToServer(
+  peopleId,
+  companyId,
+  data,
+  button
+) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function () {
+
+        closeEditModal();
+
+        renderCustomerDetail();
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Save';
+
+
+        alert(
+          getErrorMessage(
+            error
+          )
+        );
+
+      }
+    )
+
+    .savePersonRecord(
+      peopleId,
+      companyId,
+      data
+    );
+
+}
 
 /*************************************************
  * SAVE PERSON DATA
