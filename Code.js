@@ -3910,3 +3910,39 @@ function updateAreaRecord(
   return true;
 
 }
+
+/*************************************************
+ * GET TOTAL CUSTOMER COUNT
+ *************************************************/
+
+function getTotalCustomerCount() {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+  const lastRow =
+    sheet.getLastRow();
+
+  /*
+   * Row 1 is the header.
+   */
+
+  return Math.max(
+    0,
+    lastRow - 1
+  );
+
+}

@@ -26,6 +26,7 @@ window.addEventListener('load', function () {
   bindEvents();
   loadApplication();
   addCustomerButton();
+  loadTotalCustomerCount();
   setupUniversalSearch();
 
 });
@@ -4173,6 +4174,20 @@ function addCustomerButton() {
   button.innerHTML =
     '+ Customer';
 
+    const customerCount =
+  document.createElement(
+    'span'
+  );
+
+customerCount.id =
+  'totalCustomerCount';
+
+customerCount.className =
+  'total-customer-count';
+
+customerCount.textContent =
+  '0 Customers';
+
 
   button.addEventListener(
     'click',
@@ -4187,8 +4202,12 @@ function addCustomerButton() {
       sheetButton
     );
 
-}
+    button.parentNode.insertBefore(
+  customerCount,
+  sheetButton
+);
 
+}
 
 /*************************************************
  * OPEN ADD CUSTOMER
@@ -6305,6 +6324,48 @@ function deleteSettingItem(
       settingName,
       value
     );
+
+}
+
+/*************************************************
+ * LOAD TOTAL CUSTOMER COUNT
+ *************************************************/
+
+function loadTotalCustomerCount() {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(count) {
+
+        const element =
+          document.getElementById(
+            'totalCustomerCount'
+          );
+
+        if (!element) {
+          return;
+        }
+
+        element.textContent =
+          count +
+          ' Customers';
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        console.log(
+          'Customer count error:',
+          error
+        );
+
+      }
+    )
+
+    .getTotalCustomerCount();
 
 }
 
