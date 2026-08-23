@@ -513,32 +513,22 @@ function renderHubMarkers() {
 
 
   /*
-   * Show all hubs.
-   */
+ * Initial map view
+ *
+ * Start around Central Bengaluru
+ * instead of showing all 47 hubs.
+ */
 
-  if (hubs.length === 1) {
+map.setCenter({
 
-    map.setCenter({
+  lat: 12.9716,
 
-      lat:
-        Number(
-          hubs[0].latitude
-        ),
+  lng: 77.5946
 
-      lng:
-        Number(
-          hubs[0].longitude
-        )
+});
 
-    });
 
-    map.setZoom(11);
-
-  } else {
-
-    map.fitBounds(bounds);
-
-  }
+map.setZoom(11);
 
 }
 
