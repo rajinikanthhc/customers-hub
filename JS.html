@@ -25,6 +25,7 @@ window.addEventListener('load', function () {
 
   bindEvents();
   loadApplication();
+  addCustomerButton();
 
 });
 
@@ -3539,6 +3540,484 @@ function getErrorMessage(error) {
     'Unknown error.'
 
   );
+
+}
+
+/*************************************************
+ * ADD CUSTOMER BUTTON
+ *************************************************/
+
+function addCustomerButton() {
+
+  /*
+   * Do not create twice.
+   */
+
+  if (
+    document.getElementById(
+      'addCustomerButton'
+    )
+  ) {
+    return;
+  }
+
+
+  const sheetButton =
+    document.getElementById(
+      'openSheetButton'
+    );
+
+
+  if (!sheetButton) {
+    return;
+  }
+
+
+  const button =
+    document.createElement(
+      'button'
+    );
+
+
+  button.id =
+    'addCustomerButton';
+
+
+  button.type =
+    'button';
+
+
+  button.className =
+    'top-action-button';
+
+
+  button.title =
+    'Add Customer';
+
+
+  button.innerHTML =
+    '+ Customer';
+
+
+  button.addEventListener(
+    'click',
+    openCustomerAdd
+  );
+
+
+  sheetButton
+    .parentNode
+    .insertBefore(
+      button,
+      sheetButton
+    );
+
+}
+
+
+/*************************************************
+ * OPEN ADD CUSTOMER
+ *************************************************/
+
+function openCustomerAdd() {
+
+  loadSettingsOptions(
+    function (options) {
+
+      google.script.run
+
+        .withSuccessHandler(
+          function (companyId) {
+
+            showCustomerAddForm(
+              options,
+              companyId
+            );
+
+          }
+        )
+
+        .withFailureHandler(
+          function (error) {
+
+            alert(
+              getErrorMessage(error)
+            );
+
+          }
+        )
+
+        .getNextAvailableCompanyId();
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * ADD CUSTOMER FORM
+ *************************************************/
+
+function showCustomerAddForm(
+  options,
+  companyId
+) {
+
+  options =
+    options || {};
+
+
+  let html = '';
+
+
+  /*
+   * Company ID
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Company ID</label>' +
+
+      '<input ' +
+        'id="addCompanyId" ' +
+        'value="' +
+          escapeAttribute(companyId) +
+        '"' +
+        'readonly>' +
+
+    '</div>';
+
+
+  /*
+   * Customer Name
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Customer Name</label>' +
+
+      '<input ' +
+        'id="addCustomerName" ' +
+        'placeholder="Enter customer name">' +
+
+    '</div>';
+
+
+  /*
+   * Industrial Area
+   */
+
+  html += createSelectHtml(
+
+    'addIndustrialArea',
+
+    'Industrial Area',
+
+    options['Industrial Area'],
+
+    ''
+
+  );
+
+
+  /*
+   * Industrial Hub
+   */
+
+  html += createSelectHtml(
+
+    'addIndustrialHub',
+
+    'Industrial Hub',
+
+    options['Industrial Hub'],
+
+    ''
+
+  );
+
+
+  /*
+   * City
+   */
+
+  html += createSelectHtml(
+
+    'addCity',
+
+    'City',
+
+    options['City'],
+
+    ''
+
+  );
+
+
+  /*
+   * Type
+   */
+
+  html += createSelectHtml(
+
+    'addType',
+
+    'Type',
+
+    options['Type'],
+
+    ''
+
+  );
+
+
+  /*
+   * Status
+   */
+
+  html += createSelectHtml(
+
+    'addStatus',
+
+    'Status',
+
+    options['Status'],
+
+    ''
+
+  );
+
+
+  /*
+   * Potential
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Potential</label>' +
+
+      '<input ' +
+        'id="addPotential" ' +
+        'placeholder="Enter potential">' +
+
+    '</div>';
+
+
+  /*
+   * Website
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Website</label>' +
+
+      '<input ' +
+        'id="addWebsite" ' +
+        'placeholder="https://">' +
+
+    '</div>';
+
+
+  /*
+   * Notes
+   */
+
+  html +=
+
+    '<div class="edit-field">' +
+
+      '<label>Notes</label>' +
+
+      '<textarea ' +
+        'id="addNotes" ' +
+        'placeholder="Notes"></textarea>' +
+
+    '</div>';
+
+
+  openEditModal(
+
+    'Add Customer',
+
+    html,
+
+    saveNewCustomer
+
+  );
+
+}
+
+
+/*************************************************
+ * SAVE NEW CUSTOMER
+ *************************************************/
+
+function saveNewCustomer() {
+
+  const button =
+    document.getElementById(
+      'editSaveButton'
+    );
+
+
+  const data = {
+
+    customerName:
+      document
+        .getElementById(
+          'addCustomerName'
+        )
+        .value
+        .trim(),
+
+    industrialArea:
+      document
+        .getElementById(
+          'addIndustrialArea'
+        )
+        .value
+        .trim(),
+
+    industrialHub:
+      document
+        .getElementById(
+          'addIndustrialHub'
+        )
+        .value
+        .trim(),
+
+    city:
+      document
+        .getElementById(
+          'addCity'
+        )
+        .value
+        .trim(),
+
+    type:
+      document
+        .getElementById(
+          'addType'
+        )
+        .value
+        .trim(),
+
+    status:
+      document
+        .getElementById(
+          'addStatus'
+        )
+        .value
+        .trim(),
+
+    potential:
+      document
+        .getElementById(
+          'addPotential'
+        )
+        .value
+        .trim(),
+
+    website:
+      document
+        .getElementById(
+          'addWebsite'
+        )
+        .value
+        .trim(),
+
+    notes:
+      document
+        .getElementById(
+          'addNotes'
+        )
+        .value
+        .trim()
+
+  };
+
+
+  if (!data.customerName) {
+
+    alert(
+      'Please enter Customer Name.'
+    );
+
+    return;
+
+  }
+
+
+  if (!data.industrialHub) {
+
+    alert(
+      'Please select Industrial Hub.'
+    );
+
+    return;
+
+  }
+
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Saving...';
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function (companyId) {
+
+        closeEditModal();
+
+
+        alert(
+          'Customer added successfully.\n\nCompany ID: ' +
+          companyId
+        );
+
+
+        /*
+         * Reload hubs/customer data.
+         */
+
+        loadHubs();
+
+      }
+    )
+
+    .withFailureHandler(
+      function (error) {
+
+        button.disabled =
+          false;
+
+        button.textContent =
+          'Save';
+
+
+        alert(
+          getErrorMessage(error)
+        );
+
+      }
+    )
+
+    .saveNewCustomerRecord(
+      data
+    );
 
 }
 

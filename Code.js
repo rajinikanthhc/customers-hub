@@ -2358,3 +2358,348 @@ function getGitHubImageUrl(
   );
 
 }
+
+/*************************************************
+ * GET LOWEST AVAILABLE COMPANY ID
+ *************************************************/
+
+function getNextAvailableCompanyId() {
+
+  const ss =
+    SpreadsheetApp.getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
+
+
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+
+  if (!values.length) {
+
+    return 'C0001';
+
+  }
+
+
+  const headers =
+    values[0];
+
+
+  const idColumn =
+    headers.findIndex(
+      function (header) {
+
+        return String(header)
+          .trim()
+          .toLowerCase() ===
+          'company id';
+
+      }
+    );
+
+
+  if (idColumn === -1) {
+
+    throw new Error(
+      'Company ID column not found.'
+    );
+
+  }
+
+
+  const usedIds =
+    {};
+
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const value =
+      String(
+        values[i][idColumn] || ''
+      )
+      .trim()
+      .toUpperCase();
+
+
+    const match =
+      value.match(
+        /^C(\d+)$/
+      );
+
+
+    if (match) {
+
+      usedIds[
+        Number(match[1])
+      ] = true;
+
+    }
+
+  }
+
+
+  let number = 1;
+
+
+  while (
+    usedIds[number]
+  ) {
+
+    number++;
+
+  }
+
+
+  return 'C' +
+    String(number)
+      .padStart(
+        4,
+        '0'
+      );
+
+}
+
+
+/*************************************************
+ * SAVE NEW CUSTOMER
+ *************************************************/
+
+function saveNewCustomerRecord(
+  data
+) {
+
+  const lock =
+    LockService.getScriptLock();
+
+
+  lock.waitLock(
+    30000
+  );
+
+
+  try {
+
+    const ss =
+      SpreadsheetApp
+        .getActiveSpreadsheet();
+
+
+    const sheet =
+      ss.getSheetByName(
+        CUSTOMERS_SHEET
+      );
+
+
+    if (!sheet) {
+
+      throw new Error(
+        'Customers sheet not found.'
+      );
+
+    }
+
+
+    if (
+      !data ||
+      !data.customerName
+    ) {
+
+      throw new Error(
+        'Customer Name is required.'
+      );
+
+    }
+
+
+    const values =
+      sheet
+        .getDataRange()
+        .getValues();
+
+
+    if (!values.length) {
+
+      throw new Error(
+        'Customers sheet is empty.'
+      );
+
+    }
+
+
+    const headers =
+      values[0].map(
+        function (header) {
+
+          return String(header)
+            .trim()
+            .toLowerCase();
+
+        }
+      );
+
+
+    const idColumn =
+      headers.indexOf(
+        'company id'
+      );
+
+
+    if (idColumn === -1) {
+
+      throw new Error(
+        'Company ID column not found.'
+      );
+
+    }
+
+
+    /*
+     * Generate again while locked.
+     *
+     * This guarantees that two users
+     * cannot accidentally get the same ID.
+     */
+
+    const companyId =
+      getNextAvailableCompanyId();
+
+
+    /*
+     * Create a blank row based on
+     * the existing sheet columns.
+     */
+
+    const newRow =
+      new Array(
+        headers.length
+      )
+      .fill('');
+
+
+    /*
+     * Helper to safely set
+     * a column by header.
+     */
+
+    function setField(
+      header,
+      value
+    ) {
+
+      const column =
+        headers.indexOf(
+          header
+        );
+
+
+      if (
+        column !== -1
+      ) {
+
+        newRow[column] =
+          value || '';
+
+      }
+
+    }
+
+
+    setField(
+      'company id',
+      companyId
+    );
+
+
+    setField(
+      'customer name',
+      data.customerName
+    );
+
+
+    setField(
+      'industrial area',
+      data.industrialArea
+    );
+
+
+    setField(
+      'industrial hub',
+      data.industrialHub
+    );
+
+
+    setField(
+      'city',
+      data.city
+    );
+
+
+    setField(
+      'type',
+      data.type
+    );
+
+
+    setField(
+      'status',
+      data.status
+    );
+
+
+    setField(
+      'potential',
+      data.potential
+    );
+
+
+    setField(
+      'website',
+      data.website
+    );
+
+
+    setField(
+      'notes',
+      data.notes
+    );
+
+
+    /*
+     * Add customer.
+     */
+
+    sheet
+      .appendRow(
+        newRow
+      );
+
+
+    return companyId;
+
+
+  } finally {
+
+    lock.releaseLock();
+
+  }
+
+}
