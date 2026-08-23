@@ -1071,6 +1071,11 @@ function getCustomerById(companyId) {
 
 }
 
+/*************************************************
+ * SAVE PERSON
+ * ADD / EDIT CONTACT + VISITING CARD
+ *************************************************/
+
 function savePersonRecord(
   peopleId,
   companyId,
@@ -1080,8 +1085,12 @@ function savePersonRecord(
   const ss =
     SpreadsheetApp.getActiveSpreadsheet();
 
+
   const sheet =
-    ss.getSheetByName('People');
+    ss.getSheetByName(
+      PEOPLE_SHEET
+    );
+
 
   if (!sheet) {
 
@@ -1093,17 +1102,21 @@ function savePersonRecord(
 
 
   const values =
-    sheet.getDataRange().getValues();
+    sheet
+      .getDataRange()
+      .getValues();
 
 
   const headers =
-    values[0].map(function(h) {
+    values[0].map(
+      function (h) {
 
-      return String(h)
-        .trim()
-        .toLowerCase();
+        return String(h)
+          .trim()
+          .toLowerCase();
 
-    });
+      }
+    );
 
 
   const idColumn =
@@ -1125,7 +1138,7 @@ function savePersonRecord(
 
 
   /*
-   * EDIT EXISTING PERSON
+   * Find existing person
    */
 
   if (peopleId) {
@@ -1140,10 +1153,13 @@ function savePersonRecord(
         String(
           values[i][idColumn]
         ).trim() ===
-        String(peopleId).trim()
+        String(
+          peopleId
+        ).trim()
       ) {
 
-        row = i + 1;
+        row =
+          i + 1;
 
         break;
 
@@ -1155,7 +1171,7 @@ function savePersonRecord(
 
 
   /*
-   * ADD NEW PERSON
+   * Create new person
    */
 
   if (row === -1) {
@@ -1187,7 +1203,9 @@ function savePersonRecord(
       );
 
 
-    if (companyColumn !== -1) {
+    if (
+      companyColumn !== -1
+    ) {
 
       sheet
         .getRange(
@@ -1202,6 +1220,83 @@ function savePersonRecord(
 
   }
 
+
+  /*
+   * Existing photo filename
+   */
+
+  const photoColumn =
+    headers.indexOf(
+      'photo'
+    );
+
+
+  let oldPhotoName = '';
+
+
+  if (
+    photoColumn !== -1 &&
+    row <= sheet.getLastRow()
+  ) {
+
+    oldPhotoName =
+      String(
+        sheet
+          .getRange(
+            row,
+            photoColumn + 1
+          )
+          .getValue() ||
+        ''
+      ).trim();
+
+  }
+
+
+  /*
+   * Handle uploaded visiting card
+   */
+
+  let finalPhotoName =
+    oldPhotoName;
+
+
+  if (
+    data.photoFile &&
+    data.photoFile.base64
+  ) {
+
+    finalPhotoName =
+      saveVisitingCardImage(
+        peopleId,
+        data.photoFile,
+        oldPhotoName
+      );
+
+  }
+
+
+  /*
+   * If no new image was uploaded,
+   * retain existing filename.
+   */
+
+  if (
+    !finalPhotoName &&
+    data.photo
+  ) {
+
+    finalPhotoName =
+      String(
+        data.photo
+      ).trim();
+
+  }
+
+
+  /*
+   * Save normal People fields
+   */
 
   const fields = {
 
@@ -1218,35 +1313,236 @@ function savePersonRecord(
       data.email,
 
     'photo':
-      data.photo
+      finalPhotoName
 
   };
 
 
   Object.keys(fields)
-    .forEach(function(header) {
+    .forEach(
+      function (header) {
 
-      const column =
-        headers.indexOf(header);
-
-
-      if (column !== -1) {
-
-        sheet
-          .getRange(
-            row,
-            column + 1
-          )
-          .setValue(
-            fields[header]
+        const column =
+          headers.indexOf(
+            header
           );
 
-      }
 
-    });
+        if (
+          column !== -1
+        ) {
+
+          sheet
+            .getRange(
+              row,
+              column + 1
+            )
+            .setValue(
+              fields[header]
+            );
+
+        }
+
+      }
+    );
 
 
   return true;
+
+}
+
+/*************************************************
+ * SAVE VISITING CARD IMAGE
+ *************************************************/
+
+function saveVisitingCardImage(
+  peopleId,
+  fileData,
+  oldPhotoName
+) {
+
+  if (
+    !fileData ||
+    !fileData.base64
+  ) {
+
+    return oldPhotoName || '';
+
+  }
+
+
+  /*
+   * Get / create dedicated folder.
+   */
+
+  const folder =
+    getVisitingCardFolder();
+
+
+  /*
+   * Remove old file when replacing.
+   */
+
+  if (oldPhotoName) {
+
+    try {
+
+      const oldFiles =
+        folder.getFilesByName(
+          oldPhotoName
+        );
+
+
+      while (
+        oldFiles.hasNext()
+      ) {
+
+        const oldFile =
+          oldFiles.next();
+
+
+        oldFile.setTrashed(
+          true
+        );
+
+      }
+
+    } catch (error) {
+
+      console.log(
+        'Old visiting card could not be removed:',
+        error
+      );
+
+    }
+
+  }
+
+
+  /*
+   * Determine extension.
+   */
+
+  const originalName =
+    String(
+      fileData.fileName ||
+      'VisitingCard'
+    );
+
+
+  let extension =
+    'jpg';
+
+
+  const match =
+    originalName.match(
+      /\.([a-zA-Z0-9]+)$/
+    );
+
+
+  if (match) {
+
+    extension =
+      match[1].toLowerCase();
+
+  }
+
+
+  /*
+   * Clean People ID.
+   */
+
+  const safePeopleId =
+    String(
+      peopleId
+    )
+      .replace(
+        /[^a-zA-Z0-9_-]/g,
+        ''
+      );
+
+
+  /*
+   * Generated filename.
+   *
+   * Example:
+   * P0001_VisitingCard.jpg
+   */
+
+  const fileName =
+    safePeopleId +
+    '_VisitingCard.' +
+    extension;
+
+
+  /*
+   * Convert Base64 to blob.
+   */
+
+  const bytes =
+    Utilities
+      .base64Decode(
+        fileData.base64
+      );
+
+
+  const blob =
+    Utilities
+      .newBlob(
+        bytes,
+        fileData.mimeType ||
+          'image/jpeg',
+        fileName
+      );
+
+
+  /*
+   * Create Drive file.
+   */
+
+  const file =
+    folder.createFile(
+      blob
+    );
+
+
+  /*
+   * Return ONLY filename.
+   * This goes into People > Photo.
+   */
+
+  return file.getName();
+
+}
+
+/*************************************************
+ * VISITING CARD FOLDER
+ *************************************************/
+
+function getVisitingCardFolder() {
+
+  const folderName =
+    'Customers Hub - Visiting Cards';
+
+
+  const folders =
+    DriveApp.getFoldersByName(
+      folderName
+    );
+
+
+  if (
+    folders.hasNext()
+  ) {
+
+    return folders.next();
+
+  }
+
+
+  return DriveApp.createFolder(
+    folderName
+  );
 
 }
 

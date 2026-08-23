@@ -2604,19 +2604,32 @@ function showPersonEditForm(
 
   html +=
 
-    '<div class="edit-field">' +
+  '<div class="edit-field">' +
 
-      '<label>Visiting Card</label>' +
+    '<label>Visiting Card</label>' +
 
-      '<input ' +
-        'id="editPersonPhoto" ' +
-        'value="' +
-          escapeAttribute(
-            photo
-          ) +
-        '">' +
+    '<input ' +
+      'type="file" ' +
+      'id="editPersonPhotoFile" ' +
+      'accept="image/*">' +
 
-    '</div>';
+    '<input ' +
+      'type="hidden" ' +
+      'id="editPersonPhoto" ' +
+      'value="' +
+        escapeAttribute(photo) +
+      '">' +
+
+    (
+      photo
+        ? '<div class="current-card-file">' +
+            'Current: ' +
+            escapeHtml(photo) +
+          '</div>'
+        : ''
+    ) +
+
+  '</div>';
 
 
   openEditModal(
@@ -2659,49 +2672,63 @@ function savePerson() {
     );
 
 
-  const data = {
+  const name =
+    document
+      .getElementById(
+        'editPersonName'
+      )
+      .value
+      .trim();
 
-    name:
-      document
-        .getElementById(
-          'editPersonName'
-        )
-        .value
-        .trim(),
 
-    designation:
-      document
-        .getElementById(
-          'editPersonDesignation'
-        )
-        .value
-        .trim(),
+  const designation =
+    document
+      .getElementById(
+        'editPersonDesignation'
+      )
+      .value
+      .trim();
 
-    phone:
-      document
-        .getElementById(
-          'editPersonPhone'
-        )
-        .value
-        .trim(),
 
-    email:
-      document
-        .getElementById(
-          'editPersonEmail'
-        )
-        .value
-        .trim(),
+  const phone =
+    document
+      .getElementById(
+        'editPersonPhone'
+      )
+      .value
+      .trim();
 
-    photo:
-      document
-        .getElementById(
-          'editPersonPhoto'
-        )
-        .value
-        .trim()
 
-  };
+  const email =
+    document
+      .getElementById(
+        'editPersonEmail'
+      )
+      .value
+      .trim();
+
+
+  const existingPhoto =
+    document
+      .getElementById(
+        'editPersonPhoto'
+      )
+      .value
+      .trim();
+
+
+  const fileInput =
+    document.getElementById(
+      'editPersonPhotoFile'
+    );
+
+
+  const file =
+    fileInput &&
+    fileInput.files &&
+    fileInput.files.length
+      ? fileInput.files[0]
+      : null;
 
 
   const button =
@@ -2717,17 +2744,176 @@ function savePerson() {
     'Saving...';
 
 
+  const data = {
+
+    name:
+      name,
+
+    designation:
+      designation,
+
+    phone:
+      phone,
+
+    email:
+      email,
+
+    photo:
+      existingPhoto,
+
+    photoFile:
+      null
+
+  };
+
+
+  /*
+   * No new image selected.
+   * Keep existing card.
+   */
+
+  if (!file) {
+
+    savePersonData(
+      peopleId,
+      companyId,
+      data,
+      button
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Validate image.
+   */
+
+  if (
+    !file.type ||
+    !file.type.startsWith('image/')
+  ) {
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      'Save';
+
+    alert(
+      'Please select an image file.'
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Limit image size to 5 MB.
+   */
+
+  if (
+    file.size >
+    5 * 1024 * 1024
+  ) {
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      'Save';
+
+    alert(
+      'Visiting card image must be 5 MB or smaller.'
+    );
+
+    return;
+
+  }
+
+
+  const reader =
+    new FileReader();
+
+
+  reader.onload =
+    function () {
+
+      const result =
+        reader.result;
+
+
+      const base64 =
+        String(result)
+          .split(',')[1];
+
+
+      data.photoFile = {
+
+        fileName:
+          file.name,
+
+        mimeType:
+          file.type,
+
+        base64:
+          base64
+
+      };
+
+
+      savePersonData(
+        peopleId,
+        companyId,
+        data,
+        button
+      );
+
+    };
+
+
+  reader.onerror =
+    function () {
+
+      button.disabled =
+        false;
+
+      button.textContent =
+        'Save';
+
+      alert(
+        'Unable to read the image.'
+      );
+
+    };
+
+
+  reader.readAsDataURL(
+    file
+  );
+
+}
+
+
+/*************************************************
+ * SAVE PERSON DATA
+ *************************************************/
+
+function savePersonData(
+  peopleId,
+  companyId,
+  data,
+  button
+) {
+
   google.script.run
 
     .withSuccessHandler(
       function () {
 
         closeEditModal();
-
-        /*
-         * Reload customer details
-         * including People.
-         */
 
         renderCustomerDetail();
 
@@ -2758,7 +2944,6 @@ function savePerson() {
     );
 
 }
-
 
 /*************************************************
  * LOAD SETTINGS OPTIONS
