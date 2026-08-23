@@ -60,6 +60,13 @@ function bindEvents() {
       openSheet
     );
 
+    document
+  .getElementById('homeButton')
+  .addEventListener(
+    'click',
+    resetHomeView
+  );
+
 }
 
 
@@ -1733,6 +1740,60 @@ function openSheet() {
     })
 
     .getSpreadsheetUrl();
+
+}
+
+/*************************************************
+ * RESET TO HOME VIEW
+ *************************************************/
+
+function resetHomeView() {
+
+  /*
+   * Close customer panels
+   */
+
+  document
+    .getElementById('customerView')
+    .classList.add('hidden');
+
+
+  document
+    .getElementById('detailView')
+    .classList.add('hidden');
+
+
+  /*
+   * Clear current selection
+   */
+
+  activeHubIndex = -1;
+
+  activeHub = null;
+
+  activeCustomer = null;
+
+  customers = [];
+
+
+  /*
+   * Reset map to initial view
+   */
+
+  if (map) {
+
+    map.panTo({
+
+      lat: 12.9716,
+
+      lng: 77.5946
+
+    });
+
+
+    map.setZoom(11);
+
+  }
 
 }
 
