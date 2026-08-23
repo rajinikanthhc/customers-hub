@@ -219,60 +219,75 @@ function initializeMap() {
 
         zoom: 11,
 
-        styles: [
+styles: [
 
-          {
-            featureType: 'all',
-            elementType: 'labels',
-            stylers: [
-              {
-                visibility: 'off'
-              }
-            ]
-          },
+  /* HIDE ALL LABELS */
+  {
+    featureType: 'all',
+    elementType: 'labels',
+    stylers: [
+      {
+        visibility: 'off'
+      }
+    ]
+  },
 
-          {
-            featureType: 'road',
-            elementType: 'geometry',
-            stylers: [
-              {
-                visibility: 'on'
-              }
-            ]
-          },
+  /* SHOW ONLY ROAD NAMES */
+  {
+    featureType: 'road',
+    elementType: 'labels.text',
+    stylers: [
+      {
+        visibility: 'on'
+      }
+    ]
+  },
 
-          {
-            featureType: 'administrative',
-            elementType: 'geometry',
-            stylers: [
-              {
-                visibility: 'on'
-              }
-            ]
-          },
+  /* KEEP ROAD LINES */
+  {
+    featureType: 'road',
+    elementType: 'geometry',
+    stylers: [
+      {
+        visibility: 'on'
+      }
+    ]
+  },
 
-          {
-            featureType: 'landscape',
-            elementType: 'geometry',
-            stylers: [
-              {
-                visibility: 'on'
-              }
-            ]
-          },
+  /* KEEP LAND */
+  {
+    featureType: 'landscape',
+    elementType: 'geometry',
+    stylers: [
+      {
+        visibility: 'on'
+      }
+    ]
+  },
 
-          {
-            featureType: 'water',
-            elementType: 'geometry',
-            stylers: [
-              {
-                visibility: 'on'
-              }
-            ]
-          }
+  /* KEEP WATER */
+  {
+    featureType: 'water',
+    elementType: 'geometry',
+    stylers: [
+      {
+        visibility: 'on'
+      }
+    ]
+  },
 
-        ],
+  /* KEEP ADMINISTRATIVE BOUNDARIES */
+  {
+    featureType: 'administrative',
+    elementType: 'geometry',
+    stylers: [
+      {
+        visibility: 'on'
+      }
+    ]
+  }
 
+],
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: false,

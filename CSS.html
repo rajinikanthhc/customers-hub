@@ -1724,4 +1724,446 @@ body {
 
 }
 
+/* =================================================
+   MOBILE VIEW IMPROVEMENTS
+   Safe override - does not change desktop
+================================================= */
+
+@media (max-width: 700px) {
+
+  /* ---------- HEADER ---------- */
+
+  .app-header {
+    height: 58px;
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 7px;
+    flex-shrink: 0;
+  }
+
+  .brand-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    font-size: 17px;
+  }
+
+  .brand-title {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+
+  /* ---------- SEARCH ---------- */
+
+  .universal-search {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+  }
+
+  .universal-search input {
+    width: 100%;
+    height: 36px;
+    padding-left: 36px;
+    padding-right: 34px;
+    font-size: 12px;
+    border-radius: 19px;
+  }
+
+  .universal-search-icon {
+    left: 12px;
+    top: 8px;
+    font-size: 14px;
+  }
+
+  .universal-search-clear {
+    right: 4px;
+    top: 4px;
+    width: 28px;
+    height: 28px;
+  }
+
+
+  /* ---------- HEADER ACTIONS ---------- */
+
+  .header-actions {
+    gap: 5px;
+    flex-shrink: 0;
+  }
+
+  /*
+   * On mobile keep the important
+   * + Customer button.
+   */
+
+  .add-customer-button,
+  .top-action-button {
+    height: 34px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  /*
+   * Settings and Sheet are secondary
+   * actions on mobile.
+   */
+
+  .settings-button,
+  .sheet-button {
+    display: none;
+  }
+
+  .total-customer-count,
+  .hub-count {
+    display: none;
+  }
+
+
+  /* ---------- MAP ---------- */
+
+  .map-container {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+
+  /* ---------- CUSTOMER / HUB PANELS ---------- */
+
+  .floating-panel {
+    top: 68px;
+    left: 8px;
+    right: 8px;
+
+    width: auto;
+    max-width: none;
+
+    height: calc(100vh - 78px);
+    max-height: calc(100vh - 78px);
+
+    border-radius: 10px;
+
+    box-shadow:
+      0 3px 16px rgba(0,0,0,.25);
+  }
+
+
+  /* ---------- PANEL HEADER ---------- */
+
+  .panel-header {
+    min-height: 54px;
+    height: 54px;
+
+    padding: 0 10px;
+
+    gap: 8px;
+
+    flex-shrink: 0;
+  }
+
+  .back-button {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-size: 15px;
+  }
+
+  .panel-subtitle {
+    font-size: 11px;
+  }
+
+
+  /* ---------- CUSTOMER LIST ---------- */
+
+  .customer-list {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .customer-item {
+    padding: 14px 14px;
+  }
+
+  .customer-name {
+    font-size: 14px;
+  }
+
+  .customer-area {
+    font-size: 12px;
+  }
+
+  .customer-city {
+    font-size: 11px;
+  }
+
+
+  /* ---------- CUSTOMER DETAILS ---------- */
+
+  .customer-detail {
+    padding: 14px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .customer-details {
+    padding: 0 12px 18px;
+  }
+
+  .customer-details h2 {
+    font-size: 18px;
+  }
+
+
+  /* ---------- DETAIL INFORMATION ---------- */
+
+  .customer-info-item {
+    grid-template-columns: 78px minmax(0, 1fr);
+    column-gap: 8px;
+  }
+
+  .customer-info-label {
+    font-size: 12px;
+  }
+
+  .customer-info-value {
+    font-size: 13px;
+  }
+
+
+  /* ---------- DETAIL GRID ---------- */
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+
+  /* ---------- PEOPLE ---------- */
+
+  .people-section {
+    margin-top: 16px;
+  }
+
+  .people-heading {
+    margin-top: 18px;
+    font-size: 14px;
+  }
+
+  .person-card {
+    padding: 13px;
+    margin-bottom: 9px;
+  }
+
+  .person-name {
+    font-size: 14px;
+  }
+
+  .person-designation {
+    font-size: 12px;
+  }
+
+  .person-row {
+    grid-template-columns: 50px minmax(0, 1fr);
+    font-size: 12px;
+  }
+
+  .person-field {
+    font-size: 12px;
+  }
+
+  .person-field-label {
+    min-width: 45px;
+  }
+
+
+  /* ---------- EDIT BUTTON ---------- */
+
+  .edit-icon-button,
+  .person-edit-button,
+  .edit-button {
+    width: 34px;
+    height: 34px;
+  }
+
+
+  /* ---------- ADD CONTACT ---------- */
+
+  .add-contact-button {
+    width: 100%;
+    min-height: 40px;
+    margin-top: 12px;
+    margin-bottom: 14px;
+  }
+
+
+  /* ---------- VISITING CARD ---------- */
+
+  .visiting-card {
+    min-height: 34px;
+    padding: 8px 11px;
+    font-size: 11px;
+  }
+
+  .visiting-card-preview img {
+    max-height: 260px;
+  }
+
+
+  /* ---------- WEBSITE ---------- */
+
+  .website-link,
+  .visit-website {
+    min-height: 36px;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+
+
+  /* ---------- LOADING ---------- */
+
+  .loading-overlay {
+    max-width: calc(100vw - 40px);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+
+  /* ---------- EDIT MODAL ---------- */
+
+  .edit-modal {
+    align-items: center;
+    padding: 10px;
+  }
+
+  .edit-modal-box {
+    width: 100%;
+    max-width: 500px;
+
+    max-height: calc(100vh - 20px);
+
+    border-radius: 10px;
+  }
+
+  .edit-modal-header {
+    padding: 13px 14px;
+  }
+
+  .edit-modal-body {
+    padding: 14px;
+
+    max-height: calc(100vh - 145px);
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .edit-field {
+    margin-bottom: 12px;
+  }
+
+  .edit-field input,
+  .edit-field textarea,
+  .edit-field select {
+    min-height: 40px;
+    font-size: 13px;
+  }
+
+  .edit-modal-footer {
+    padding: 10px 14px;
+  }
+
+  .cancel-button,
+  .save-button {
+    min-height: 38px;
+    padding: 8px 16px;
+  }
+
+}
+
+
+/* =================================================
+   VERY SMALL PHONES
+================================================= */
+
+@media (max-width: 430px) {
+
+  .app-header {
+    padding: 0 7px;
+    gap: 6px;
+  }
+
+  .brand-title {
+    font-size: 14px;
+  }
+
+  .brand-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .universal-search input {
+    height: 34px;
+    font-size: 11px;
+  }
+
+  .add-customer-button,
+  .top-action-button {
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .floating-panel {
+    top: 64px;
+    left: 5px;
+    right: 5px;
+
+    height: calc(100vh - 69px);
+    max-height: calc(100vh - 69px);
+  }
+
+  .panel-header {
+    min-height: 52px;
+    height: 52px;
+  }
+
+  .panel-title {
+    font-size: 14px;
+  }
+
+}
+
+
+/* =================================================
+   TOUCH DEVICES
+================================================= */
+
+@media (hover: none) and (pointer: coarse) {
+
+  .back-button,
+  .edit-icon-button,
+  .person-edit-button,
+  .edit-button,
+  .add-contact-button,
+  .visiting-card,
+  .website-link,
+  .visit-website,
+  .save-button,
+  .cancel-button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+}
+
 </style>
