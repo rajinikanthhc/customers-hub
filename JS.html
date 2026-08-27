@@ -1928,7 +1928,40 @@ function renderPeople(people) {
 
   if (people && people.length) {
 
-    people.forEach(function(person) {
+  /*
+   * SORT CONTACTS A TO Z BY NAME
+   * This changes only the display order.
+   * Google Sheet order is not changed.
+   */
+
+  people.sort(function(a, b) {
+
+    const nameA =
+      String(
+        getField(a, ['name', 'Name']) || ''
+      )
+      .trim()
+      .toLowerCase();
+
+    const nameB =
+      String(
+        getField(b, ['name', 'Name']) || ''
+      )
+      .trim()
+      .toLowerCase();
+
+    return nameA.localeCompare(
+      nameB,
+      undefined,
+      {
+        sensitivity: 'base'
+      }
+    );
+
+  });
+
+
+  people.forEach(function(person) {
 
       const name =
         getField(
