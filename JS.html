@@ -6,16 +6,20 @@
 
 let map = null;
 
-let hubs = [];
+let areas = [];
+
 let customers = [];
+
 let markers = [];
 
 let allCustomers = [];
 
-let customerListMode = 'hub';
+let customerListMode = 'area';
 
-let activeHubIndex = -1;
-let activeHub = null;
+let activeAreaIndex = -1;
+
+let activeArea = null;
+
 let activeCustomer = null;
 
 let settingsOptions = null;
@@ -25,16 +29,24 @@ let settingsOptions = null;
  * START APPLICATION
  *************************************************/
 
-window.addEventListener('load', function () {
+window.addEventListener(
+  'load',
+  function() {
 
-  bindEvents();
-  loadApplication();
-  addCustomerButton();
-  loadTotalCustomerCount();
-  setupUniversalSearch();
-setupAllCustomerSearch();
+    bindEvents();
 
-});
+    loadApplication();
+
+    addCustomerButton();
+
+    loadTotalCustomerCount();
+
+    setupUniversalSearch();
+
+    setupAllCustomerSearch();
+
+  }
+);
 
 
 /*************************************************
@@ -43,102 +55,131 @@ setupAllCustomerSearch();
 
 function bindEvents() {
 
-   addSettingsButton();
+  addSettingsButton();
 
-  const backToHubs =
-    document.getElementById('backToHubs');
 
-  if (backToHubs) {
-    backToHubs.addEventListener(
+  const backToAreas =
+    document.getElementById(
+      'backToAreas'
+    );
+
+  if (backToAreas) {
+
+    backToAreas.addEventListener(
       'click',
       closeCustomerPanel
     );
+
   }
 
 
   const backToCustomers =
-  document.getElementById(
-    'backToCustomers'
-  );
+    document.getElementById(
+      'backToCustomers'
+    );
 
-if (backToCustomers) {
+  if (backToCustomers) {
 
-  backToCustomers.addEventListener(
-    'click',
-    function() {
+    backToCustomers.addEventListener(
+      'click',
+      function() {
 
-      document
-        .getElementById(
-          'detailView'
-        )
-        .classList.add('hidden');
+        document
+          .getElementById(
+            'detailView'
+          )
+          .classList.add(
+            'hidden'
+          );
 
-      if (
-        customerListMode === 'all'
-      ) {
+
+        if (
+          customerListMode ===
+          'all'
+        ) {
+
+          document
+            .getElementById(
+              'allCustomersView'
+            )
+            .classList.remove(
+              'hidden'
+            );
+
+        } else {
+
+          showCustomerView();
+
+        }
+
+
+        restoreUniversalSearch();
+
+      }
+    );
+
+  }
+
+
+  const openSheetButton =
+    document.getElementById(
+      'openSheetButton'
+    );
+
+  if (openSheetButton) {
+
+    openSheetButton.addEventListener(
+      'click',
+      openSheet
+    );
+
+  }
+
+
+  const backFromAllCustomers =
+    document.getElementById(
+      'backFromAllCustomers'
+    );
+
+  if (backFromAllCustomers) {
+
+    backFromAllCustomers.addEventListener(
+      'click',
+      function() {
 
         document
           .getElementById(
             'allCustomersView'
           )
-          .classList.remove('hidden');
+          .classList.add(
+            'hidden'
+          );
 
-      } else {
 
-        showCustomerView();
+        customerListMode =
+          'area';
+
+
+        restoreUniversalSearch();
 
       }
-
-      restoreUniversalSearch();
-
-    }
-  );
-
-}
-
-  const openSheetButton =
-    document.getElementById('openSheetButton');
-
-  if (openSheetButton) {
-    openSheetButton.addEventListener(
-      'click',
-      openSheet
     );
+
   }
-
-  const backFromAllCustomers =
-  document.getElementById(
-    'backFromAllCustomers'
-  );
-
-if (backFromAllCustomers) {
-
-  backFromAllCustomers.addEventListener(
-    'click',
-    function() {
-
-      document
-        .getElementById(
-          'allCustomersView'
-        )
-        .classList.add('hidden');
-
-      restoreUniversalSearch();
-
-    }
-  );
-
-}
 
 
   const homeButton =
-    document.getElementById('homeButton');
+    document.getElementById(
+      'homeButton'
+    );
 
   if (homeButton) {
+
     homeButton.addEventListener(
       'click',
       resetHomeView
     );
+
   }
 
 }
@@ -151,44 +192,49 @@ if (backFromAllCustomers) {
 function loadApplication() {
 
   showLoading(true);
+
   hideError();
 
 
   google.script.run
 
-    .withSuccessHandler(function (config) {
+    .withSuccessHandler(
+      function(config) {
 
-      if (
-        !config ||
-        !config.mapApiKey
-      ) {
+        if (
+          !config ||
+          !config.mapApiKey
+        ) {
+
+          showLoading(false);
+
+          showError(
+            'Google Maps API key was not found.'
+          );
+
+          return;
+
+        }
+
+
+        loadGoogleMaps(
+          config.mapApiKey
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
 
         showLoading(false);
 
         showError(
-          'Google Maps API key was not found.'
+          getErrorMessage(error)
         );
 
-        return;
-
       }
-
-
-      loadGoogleMaps(
-        config.mapApiKey
-      );
-
-    })
-
-    .withFailureHandler(function (error) {
-
-      showLoading(false);
-
-      showError(
-        getErrorMessage(error)
-      );
-
-    })
+    )
 
     .getAppConfig();
 
@@ -199,7 +245,9 @@ function loadApplication() {
  * LOAD GOOGLE MAPS
  *************************************************/
 
-function loadGoogleMaps(apiKey) {
+function loadGoogleMaps(
+  apiKey
+) {
 
   if (
     window.google &&
@@ -207,13 +255,14 @@ function loadGoogleMaps(apiKey) {
   ) {
 
     initializeMap();
+
     return;
 
   }
 
 
   window.initCustomersHubMap =
-    function () {
+    function() {
 
       initializeMap();
 
@@ -221,7 +270,9 @@ function loadGoogleMaps(apiKey) {
 
 
   const script =
-    document.createElement('script');
+    document.createElement(
+      'script'
+    );
 
 
   script.src =
@@ -232,11 +283,12 @@ function loadGoogleMaps(apiKey) {
 
 
   script.async = true;
+
   script.defer = true;
 
 
   script.onerror =
-    function () {
+    function() {
 
       showLoading(false);
 
@@ -248,7 +300,9 @@ function loadGoogleMaps(apiKey) {
     };
 
 
-  document.head.appendChild(script);
+  document.head.appendChild(
+    script
+  );
 
 }
 
@@ -261,330 +315,449 @@ function initializeMap() {
 
   map =
     new google.maps.Map(
-      document.getElementById('map'),
+      document.getElementById(
+        'map'
+      ),
       {
 
         center: {
-          lat: 12.9716,
-          lng: 77.5946
+
+          lat:
+            12.9716,
+
+          lng:
+            77.5946
+
         },
 
         zoom: 11,
 
-styles: [
+        styles: [
 
-  /* HIDE ALL LABELS */
-  {
-    featureType: 'all',
-    elementType: 'labels',
-    stylers: [
-      {
-        visibility: 'off'
-      }
-    ]
-  },
+          /*
+           * Hide all labels.
+           */
 
-  /* SHOW ONLY ROAD NAMES */
-  {
-    featureType: 'road',
-    elementType: 'labels.text',
-    stylers: [
-      {
-        visibility: 'on'
-      }
-    ]
-  },
+          {
 
-  /* KEEP ROAD LINES */
-  {
-    featureType: 'road',
-    elementType: 'geometry',
-    stylers: [
-      {
-        visibility: 'on'
-      }
-    ]
-  },
+            featureType:
+              'all',
 
-  /* KEEP LAND */
-  {
-    featureType: 'landscape',
-    elementType: 'geometry',
-    stylers: [
-      {
-        visibility: 'on'
-      }
-    ]
-  },
+            elementType:
+              'labels',
 
-  /* KEEP WATER */
-  {
-    featureType: 'water',
-    elementType: 'geometry',
-    stylers: [
-      {
-        visibility: 'on'
-      }
-    ]
-  },
+            stylers: [
 
-  /* KEEP ADMINISTRATIVE BOUNDARIES */
-  {
-    featureType: 'administrative',
-    elementType: 'geometry',
-    stylers: [
-      {
-        visibility: 'on'
-      }
-    ]
-  }
+              {
+                visibility:
+                  'off'
+              }
 
-],
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
-        zoomControl: true,
-        clickableIcons: false,
-        gestureHandling: 'greedy'
+            ]
+
+          },
+
+          /*
+           * Show road names only.
+           */
+
+          {
+
+            featureType:
+              'road',
+
+            elementType:
+              'labels.text',
+
+            stylers: [
+
+              {
+                visibility:
+                  'on'
+              }
+
+            ]
+
+          },
+
+          {
+
+            featureType:
+              'road',
+
+            elementType:
+              'geometry',
+
+            stylers: [
+
+              {
+                visibility:
+                  'on'
+              }
+
+            ]
+
+          },
+
+          {
+
+            featureType:
+              'landscape',
+
+            elementType:
+              'geometry',
+
+            stylers: [
+
+              {
+                visibility:
+                  'on'
+              }
+
+            ]
+
+          },
+
+          {
+
+            featureType:
+              'water',
+
+            elementType:
+              'geometry',
+
+            stylers: [
+
+              {
+                visibility:
+                  'on'
+              }
+
+            ]
+
+          },
+
+          {
+
+            featureType:
+              'administrative',
+
+            elementType:
+              'geometry',
+
+            stylers: [
+
+              {
+                visibility:
+                  'on'
+              }
+
+            ]
+
+          }
+
+        ],
+
+        mapTypeControl:
+          false,
+
+        streetViewControl:
+          false,
+
+        fullscreenControl:
+          false,
+
+        zoomControl:
+          true,
+
+        clickableIcons:
+          false,
+
+        gestureHandling:
+          'greedy'
 
       }
     );
 
 
-  loadHubs();
+  loadAreas();
 
 }
 
 
 /*************************************************
- * LOAD INDUSTRIAL HUBS
+ * LOAD INDUSTRIAL AREAS
  *************************************************/
 
-function loadHubs() {
+function loadAreas() {
 
   showLoading(true);
+
   hideError();
 
 
   google.script.run
 
-    .withSuccessHandler(function (data) {
+    .withSuccessHandler(
+      function(data) {
 
-      hubs = data || [];
+        areas =
+          data || [];
 
 
-      const count =
-        document.getElementById('hubCount');
+        const count =
+          document.getElementById(
+            'areaCount'
+          );
 
-      if (count) {
-        count.textContent =
-          hubs.length;
+        if (count) {
+
+          count.textContent =
+            areas.length;
+
+        }
+
+
+        renderAreaMarkers();
+
+        showLoading(false);
+
       }
+    )
 
+    .withFailureHandler(
+      function(error) {
 
-      renderHubMarkers();
+        showLoading(false);
 
-      showLoading(false);
+        showError(
+          getErrorMessage(error)
+        );
 
-    })
+      }
+    )
 
-    .withFailureHandler(function (error) {
-
-      showLoading(false);
-
-      showError(
-        getErrorMessage(error)
-      );
-
-    })
-
-    .getIndustrialHubs();
+    .getIndustrialAreas();
 
 }
 
 
 /*************************************************
- * RENDER INDUSTRIAL HUB MARKERS
+ * RENDER AREA MARKERS
  *************************************************/
 
-function renderHubMarkers() {
+function renderAreaMarkers() {
 
-  markers.forEach(function (marker) {
+  markers.forEach(
+    function(marker) {
 
-    marker.setMap(null);
+      marker.setMap(null);
 
-  });
+    }
+  );
+
 
   markers = [];
 
 
-  if (!hubs.length) {
+  if (!areas.length) {
+
     return;
+
   }
 
 
-  hubs.forEach(function (hub, index) {
+  areas.forEach(
+    function(area, index) {
 
-    const position = {
+      const position = {
 
-      lat: Number(hub.latitude),
+        lat:
+          Number(
+            area.latitude
+          ),
 
-      lng: Number(hub.longitude)
+        lng:
+          Number(
+            area.longitude
+          )
 
-    };
+      };
 
 
-    const name =
-      String(hub.hub || '');
+      const name =
+        String(
+          area.industrialArea || ''
+        );
 
 
-    const textWidth =
-      Math.max(
-        45,
-        Math.min(
-          150,
-          name.length * 7 + 12
-        )
+      const textWidth =
+        Math.max(
+          45,
+          Math.min(
+            170,
+            name.length * 7 + 12
+          )
+        );
+
+
+      const textHeight =
+        24;
+
+
+      /*
+       * Transparent clickable area.
+       * Only area text is visible.
+       */
+
+      const svg =
+        '<svg xmlns="http://www.w3.org/2000/svg" ' +
+        'width="' +
+          textWidth +
+        '" ' +
+        'height="' +
+          textHeight +
+        '">' +
+
+          '<rect ' +
+            'x="0" ' +
+            'y="0" ' +
+            'width="' +
+              textWidth +
+            '" ' +
+            'height="' +
+              textHeight +
+            '" ' +
+            'fill="white" ' +
+            'fill-opacity="0.01"/>' +
+
+        '</svg>';
+
+
+      const transparentIcon = {
+
+        url:
+          'data:image/svg+xml;charset=UTF-8,' +
+          encodeURIComponent(svg),
+
+        scaledSize:
+          new google.maps.Size(
+            textWidth,
+            textHeight
+          ),
+
+        anchor:
+          new google.maps.Point(
+            textWidth / 2,
+            textHeight / 2
+          )
+
+      };
+
+
+      const marker =
+        new google.maps.Marker({
+
+          position:
+            position,
+
+          map:
+            map,
+
+          title:
+            name,
+
+          icon:
+            transparentIcon,
+
+          label: {
+
+            text:
+              name,
+
+            color:
+              '#202124',
+
+            fontFamily:
+              'Roboto, Arial, sans-serif',
+
+            fontSize:
+              '12px',
+
+            fontWeight:
+              '500'
+
+          },
+
+          clickable:
+            true,
+
+          zIndex:
+            1000 + index
+
+        });
+
+
+      marker.addListener(
+        'click',
+        function() {
+
+          selectArea(index);
+
+        }
       );
 
 
-    const textHeight = 24;
+      markers.push(
+        marker
+      );
 
+    }
+  );
 
-    /*
-     * Transparent clickable area.
-     * Only text is visible.
-     */
-
-    const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" ' +
-      'width="' + textWidth + '" ' +
-      'height="' + textHeight + '">' +
-
-        '<rect ' +
-          'x="0" ' +
-          'y="0" ' +
-          'width="' + textWidth + '" ' +
-          'height="' + textHeight + '" ' +
-          'fill="white" ' +
-          'fill-opacity="0.01"/>' +
-
-      '</svg>';
-
-
-    const transparentIcon = {
-
-      url:
-        'data:image/svg+xml;charset=UTF-8,' +
-        encodeURIComponent(svg),
-
-      scaledSize:
-        new google.maps.Size(
-          textWidth,
-          textHeight
-        ),
-
-      anchor:
-        new google.maps.Point(
-          textWidth / 2,
-          textHeight / 2
-        )
-
-    };
-
-
-    const marker =
-      new google.maps.Marker({
-
-        position: position,
-
-        map: map,
-
-        title: name,
-
-        icon: transparentIcon,
-
-        label: {
-
-          text: name,
-
-          color: '#202124',
-
-          fontFamily:
-            'Roboto, Arial, sans-serif',
-
-          fontSize: '12px',
-
-          fontWeight: '500'
-
-        },
-
-        clickable: true,
-
-        zIndex:
-          1000 + index
-
-      });
-
-
-    marker.addListener(
-      'click',
-      function () {
-
-        selectHub(index);
-
-      }
-    );
-
-
-    markers.push(marker);
-
-  });
-
-
-  /*
-   * Initial view:
-   * Central Bengaluru
-   */
 
   map.setCenter({
 
-    lat: 12.9716,
+    lat:
+      12.9716,
 
-    lng: 77.5946
+    lng:
+      77.5946
 
   });
 
 
-  map.setZoom(11);
+  map.setZoom(
+    11
+  );
 
 }
 
 
 /*************************************************
- * SELECT INDUSTRIAL HUB
+ * SELECT INDUSTRIAL AREA
  *************************************************/
 
-function selectHub(index) {
+function selectArea(
+  index
+) {
 
   if (
     index < 0 ||
-    index >= hubs.length
+    index >= areas.length
   ) {
+
     return;
+
   }
 
 
-  activeHubIndex =
+  activeAreaIndex =
     index;
 
-  activeHub =
-    hubs[index];
+  activeArea =
+    areas[index];
 
-
-  /*
-   * Move map to selected hub.
-   */
 
   if (map) {
 
@@ -592,12 +765,12 @@ function selectHub(index) {
 
       lat:
         Number(
-          activeHub.latitude
+          activeArea.latitude
         ),
 
       lng:
         Number(
-          activeHub.longitude
+          activeArea.longitude
         )
 
     });
@@ -605,20 +778,24 @@ function selectHub(index) {
   }
 
 
-  loadCustomersByHub(
-    activeHub.hub
+  loadCustomersByArea(
+    activeArea.industrialArea
   );
 
 }
 
 
 /*************************************************
- * LOAD CUSTOMERS BY HUB
+ * LOAD CUSTOMERS BY AREA
  *************************************************/
 
-function loadCustomersByHub(
-  hubName
+function loadCustomersByArea(
+  industrialArea
 ) {
+
+  customerListMode =
+    'area';
+
 
   showCustomerView();
 
@@ -651,33 +828,35 @@ function loadCustomersByHub(
   }
 
 
-  const selectedHubName =
-  document.getElementById(
-    'selectedHubName'
-  );
-
-if (selectedHubName) {
-
-  selectedHubName.textContent =
-    hubName;
-
-  addHubEditButton(
-    selectedHubName
-  );
-
-}
-
-  const selectedHubCity =
+  const selectedAreaName =
     document.getElementById(
-      'selectedHubCity'
+      'selectedAreaName'
     );
 
 
-  if (selectedHubCity) {
+  if (selectedAreaName) {
 
-    selectedHubCity.textContent =
-      activeHub
-        ? activeHub.city
+    selectedAreaName.textContent =
+      industrialArea;
+
+    addAreaEditButton(
+      selectedAreaName
+    );
+
+  }
+
+
+  const selectedAreaCity =
+    document.getElementById(
+      'selectedAreaCity'
+    );
+
+
+  if (selectedAreaCity) {
+
+    selectedAreaCity.textContent =
+      activeArea
+        ? activeArea.city
         : '';
 
   }
@@ -686,7 +865,7 @@ if (selectedHubName) {
   google.script.run
 
     .withSuccessHandler(
-      function (data) {
+      function(data) {
 
         customers =
           data || [];
@@ -707,7 +886,7 @@ if (selectedHubName) {
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         if (loading) {
 
@@ -732,42 +911,62 @@ if (selectedHubName) {
       }
     )
 
-    .getCustomersByHub(
-      hubName
+    .getCustomersByArea(
+      industrialArea
     );
 
 }
 
+
 /*************************************************
- * ADD HUB EDIT BUTTON
+ * AREA EDIT BUTTON
  *************************************************/
 
-function addHubEditButton(selectedHubName) {
+function addAreaEditButton(
+  selectedAreaName
+) {
 
-  if (!selectedHubName) {
+  if (!selectedAreaName) {
+
     return;
+
   }
+
 
   const existing =
-    document.querySelector('.hub-edit-button');
+    document.querySelector(
+      '.area-edit-button'
+    );
+
 
   if (existing) {
+
     existing.remove();
+
   }
 
-  const button =
-    document.createElement('button');
 
-  button.type = 'button';
+  const button =
+    document.createElement(
+      'button'
+    );
+
+
+  button.type =
+    'button';
+
 
   button.className =
-    'hub-edit-button';
+    'area-edit-button';
+
 
   button.title =
-    'Edit Industrial Hub';
+    'Edit Industrial Area';
+
 
   button.textContent =
     '✎';
+
 
   button.style.cssText =
     'margin-left:6px;' +
@@ -785,61 +984,43 @@ function addHubEditButton(selectedHubName) {
     'justify-content:center;' +
     'vertical-align:middle;';
 
+
   button.addEventListener(
     'click',
     function(event) {
 
       event.preventDefault();
+
       event.stopPropagation();
 
-      openHubEdit();
+      openAreaEdit();
 
     }
   );
 
-  /*
-   * Put pencil directly after
-   * the hub name.
-   */
-  selectedHubName.appendChild(button);
+
+  selectedAreaName.appendChild(
+    button
+  );
 
 }
 
+
 /*************************************************
- * EDIT INDUSTRIAL HUB
+ * EDIT INDUSTRIAL AREA
  *************************************************/
 
-function openHubEdit() {
+function openAreaEdit() {
 
-  if (!activeHub) {
+  if (!activeArea) {
 
     alert(
-      'No Industrial Hub selected.'
+      'No Industrial Area selected.'
     );
 
     return;
 
   }
-
-
-  const industrialArea =
-    activeHub.industrialArea || '';
-
-
-  const industrialHub =
-    activeHub.hub || '';
-
-
-  const city =
-    activeHub.city || '';
-
-
-  const latitude =
-    activeHub.latitude ?? '';
-
-
-  const longitude =
-    activeHub.longitude ?? '';
 
 
   let html = '';
@@ -852,28 +1033,15 @@ function openHubEdit() {
       '<label>Industrial Area</label>' +
 
       '<input ' +
-        'id="editHubIndustrialArea" ' +
+
+        'id="editAreaName" ' +
+
         'value="' +
+
           escapeAttribute(
-            industrialArea
+            activeArea.industrialArea
           ) +
-        '">' +
 
-    '</div>';
-
-
-  html +=
-
-    '<div class="edit-field">' +
-
-      '<label>Industrial Hub</label>' +
-
-      '<input ' +
-        'id="editHubIndustrialHub" ' +
-        'value="' +
-          escapeAttribute(
-            industrialHub
-          ) +
         '">' +
 
     '</div>';
@@ -886,11 +1054,15 @@ function openHubEdit() {
       '<label>City</label>' +
 
       '<input ' +
-        'id="editHubCity" ' +
+
+        'id="editAreaCity" ' +
+
         'value="' +
+
           escapeAttribute(
-            city
+            activeArea.city
           ) +
+
         '">' +
 
     '</div>';
@@ -903,13 +1075,19 @@ function openHubEdit() {
       '<label>Latitude</label>' +
 
       '<input ' +
-        'id="editHubLatitude" ' +
+
+        'id="editAreaLatitude" ' +
+
         'type="number" ' +
+
         'step="any" ' +
+
         'value="' +
+
           escapeAttribute(
-            latitude
+            activeArea.latitude
           ) +
+
         '">' +
 
     '</div>';
@@ -922,13 +1100,19 @@ function openHubEdit() {
       '<label>Longitude</label>' +
 
       '<input ' +
-        'id="editHubLongitude" ' +
+
+        'id="editAreaLongitude" ' +
+
         'type="number" ' +
+
         'step="any" ' +
+
         'value="' +
+
           escapeAttribute(
-            longitude
+            activeArea.longitude
           ) +
+
         '">' +
 
     '</div>';
@@ -936,26 +1120,27 @@ function openHubEdit() {
 
   openEditModal(
 
-    'Edit Industrial Hub',
+    'Edit Industrial Area',
 
     html,
 
-    saveHub
+    saveArea
 
   );
 
 }
 
+
 /*************************************************
- * SAVE INDUSTRIAL HUB
+ * SAVE INDUSTRIAL AREA
  *************************************************/
 
-function saveHub() {
+function saveArea() {
 
-  if (!activeHub) {
+  if (!activeArea) {
 
     alert(
-      'No Industrial Hub selected.'
+      'No Industrial Area selected.'
     );
 
     return;
@@ -963,24 +1148,12 @@ function saveHub() {
   }
 
 
-  const rowNumber =
-    activeHub.rowNumber;
-
-
   const data = {
 
     industrialArea:
       document
         .getElementById(
-          'editHubIndustrialArea'
-        )
-        .value
-        .trim(),
-
-    industrialHub:
-      document
-        .getElementById(
-          'editHubIndustrialHub'
+          'editAreaName'
         )
         .value
         .trim(),
@@ -988,7 +1161,7 @@ function saveHub() {
     city:
       document
         .getElementById(
-          'editHubCity'
+          'editAreaCity'
         )
         .value
         .trim(),
@@ -996,7 +1169,7 @@ function saveHub() {
     latitude:
       document
         .getElementById(
-          'editHubLatitude'
+          'editAreaLatitude'
         )
         .value
         .trim(),
@@ -1004,7 +1177,7 @@ function saveHub() {
     longitude:
       document
         .getElementById(
-          'editHubLongitude'
+          'editAreaLongitude'
         )
         .value
         .trim()
@@ -1012,10 +1185,10 @@ function saveHub() {
   };
 
 
-  if (!data.industrialHub) {
+  if (!data.industrialArea) {
 
     alert(
-      'Industrial Hub is required.'
+      'Industrial Area is required.'
     );
 
     return;
@@ -1036,7 +1209,11 @@ function saveHub() {
 
   if (
     data.latitude === '' ||
-    isNaN(Number(data.latitude))
+    isNaN(
+      Number(
+        data.latitude
+      )
+    )
   ) {
 
     alert(
@@ -1050,7 +1227,11 @@ function saveHub() {
 
   if (
     data.longitude === '' ||
-    isNaN(Number(data.longitude))
+    isNaN(
+      Number(
+        data.longitude
+      )
+    )
   ) {
 
     alert(
@@ -1079,115 +1260,75 @@ function saveHub() {
   }
 
 
+  const oldAreaName =
+    activeArea.industrialArea;
+
+
   google.script.run
 
     .withSuccessHandler(
-      function () {
+      function() {
 
-        /*
-         * Update local hub immediately.
-         */
+        activeArea.industrialArea =
+          data.industrialArea;
 
-        const oldHubName =
-  activeHub.hub;
+        activeArea.city =
+          data.city;
 
+        activeArea.latitude =
+          Number(
+            data.latitude
+          );
 
-activeHub.industrialArea =
-  data.industrialArea;
-
-activeHub.hub =
-  data.industrialHub;
-
-activeHub.city =
-  data.city;
-
-activeHub.latitude =
-  Number(
-    data.latitude
-  );
-
-activeHub.longitude =
-  Number(
-    data.longitude
-  );
+        activeArea.longitude =
+          Number(
+            data.longitude
+          );
 
 
-/*
- * Keep hubs[] synchronized.
- */
+        if (
+          activeAreaIndex >= 0
+        ) {
 
-const hubArrayIndex =
-  hubs.findIndex(
-    function(hub) {
+          areas[
+            activeAreaIndex
+          ] =
+            activeArea;
 
-      return hub === activeHub ||
-        (
-          String(hub.hub || '')
-            .trim()
-            .toLowerCase() ===
-          String(oldHubName || '')
-            .trim()
-            .toLowerCase()
-        );
+        }
 
-    }
-  );
-
-
-if (
-  hubArrayIndex !== -1
-) {
-
-  hubs[hubArrayIndex] =
-    activeHub;
-
-  activeHubIndex =
-    hubArrayIndex;
-
-}
-
-
-        /*
-         * Close modal.
-         */
 
         closeEditModal();
 
 
-        /*
-         * Update header.
-         */
-
-        const selectedHubName =
+        const selectedAreaName =
           document.getElementById(
-            'selectedHubName'
+            'selectedAreaName'
           );
 
-        if (selectedHubName) {
 
-          selectedHubName.textContent =
-            activeHub.hub;
+        if (selectedAreaName) {
 
-          addHubEditButton(
-            selectedHubName
+          selectedAreaName.textContent =
+            activeArea.industrialArea;
+
+          addAreaEditButton(
+            selectedAreaName
           );
 
         }
 
 
-        /*
-         * Update city/count line.
-         */
-
-        const selectedHubCity =
+        const selectedAreaCity =
           document.getElementById(
-            'selectedHubCity'
+            'selectedAreaCity'
           );
 
-        if (selectedHubCity) {
 
-          selectedHubCity.textContent =
-            activeHub.city +
+        if (selectedAreaCity) {
+
+          selectedAreaCity.textContent =
+            activeArea.city +
             ' · ' +
             customers.length +
             ' Customers';
@@ -1195,54 +1336,23 @@ if (
         }
 
 
-        /*
-         * Refresh map markers.
-         */
+        renderAreaMarkers();
 
-        renderHubMarkers();
 
         /*
-         * Re-select the updated hub
-         * so the customer list remains open.
+         * Refresh the customer list
+         * using the new area name.
          */
 
-        const newIndex =
-          hubs.findIndex(
-            function(hub) {
-
-              return String(
-                hub.hub || ''
-              )
-              .trim()
-              .toLowerCase() ===
-
-              String(
-                activeHub.hub || ''
-              )
-              .trim()
-              .toLowerCase();
-
-            }
-          );
-
-
-        if (
-          newIndex !== -1
-        ) {
-
-          activeHubIndex =
-            newIndex;
-
-          activeHub =
-            hubs[newIndex];
-
-        }
+        loadCustomersByArea(
+          activeArea.industrialArea
+        );
 
       }
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         if (button) {
 
@@ -1263,11 +1373,12 @@ if (
     )
 
     .updateAreaRecord(
-      rowNumber,
+      activeArea.rowNumber,
       data
     );
 
 }
+
 
 /*************************************************
  * RENDER CUSTOMER LIST
@@ -1282,26 +1393,31 @@ function renderCustomerList() {
 
 
   if (!list) {
+
     return;
+
   }
 
 
-  list.innerHTML = '';
+  list.innerHTML =
+    '';
 
 
-  const selectedHubCity =
+  const selectedAreaCity =
     document.getElementById(
-      'selectedHubCity'
+      'selectedAreaCity'
     );
 
 
-  if (selectedHubCity) {
+  if (selectedAreaCity) {
 
-    selectedHubCity.textContent =
+    selectedAreaCity.textContent =
 
-      (activeHub
-        ? activeHub.city
-        : '') +
+      (
+        activeArea
+          ? activeArea.city
+          : ''
+      ) +
 
       ' · ' +
 
@@ -1316,7 +1432,7 @@ function renderCustomerList() {
 
     list.innerHTML =
       '<div class="loading">' +
-        'No customers found in this Industrial Hub.' +
+        'No customers found in this Industrial Area.' +
       '</div>';
 
     return;
@@ -1325,10 +1441,7 @@ function renderCustomerList() {
 
 
   customers.forEach(
-    function (
-      customer,
-      index
-    ) {
+    function(customer, index) {
 
       const item =
         document.createElement(
@@ -1403,15 +1516,19 @@ function renderCustomerList() {
 
       item.addEventListener(
         'click',
-        function () {
+        function() {
 
-          selectCustomer(index);
+          selectCustomer(
+            index
+          );
 
         }
       );
 
 
-      list.appendChild(item);
+      list.appendChild(
+        item
+      );
 
     }
   );
@@ -1423,13 +1540,17 @@ function renderCustomerList() {
  * SELECT CUSTOMER
  *************************************************/
 
-function selectCustomer(index) {
+function selectCustomer(
+  index
+) {
 
   if (
     index < 0 ||
     index >= customers.length
   ) {
+
     return;
+
   }
 
 
@@ -1442,18 +1563,21 @@ function selectCustomer(index) {
   showDetailView();
 
 
-  if (activeHub && map) {
+  if (
+    activeArea &&
+    map
+  ) {
 
     map.panTo({
 
       lat:
         Number(
-          activeHub.latitude
+          activeArea.latitude
         ),
 
       lng:
         Number(
-          activeHub.longitude
+          activeArea.longitude
         )
 
     });
@@ -1464,7 +1588,7 @@ function selectCustomer(index) {
 
 
 /*************************************************
- * RENDER CUSTOMER DETAILS
+ * CUSTOMER DETAILS
  *************************************************/
 
 function renderCustomerDetail() {
@@ -1480,13 +1604,16 @@ function renderCustomerDetail() {
 
 
   if (!detail) {
+
     return;
+
   }
 
 
   if (!customer) {
 
-    detail.innerHTML = '';
+    detail.innerHTML =
+      '';
 
     return;
 
@@ -1498,8 +1625,7 @@ function renderCustomerDetail() {
       customer,
       [
         'companyId',
-        'Company ID',
-        'company_id'
+        'Company ID'
       ]
     );
 
@@ -1510,7 +1636,6 @@ function renderCustomerDetail() {
       [
         'customerName',
         'Customer Name',
-        'customer_name',
         'Company',
         'company'
       ]
@@ -1570,10 +1695,6 @@ function renderCustomerDetail() {
   let html = '';
 
 
-  /*
-   * Header
-   */
-
   html +=
 
     '<div class="detail-header-row">' +
@@ -1581,65 +1702,71 @@ function renderCustomerDetail() {
       '<div>' +
 
         '<div class="detail-company-name">' +
+
           escapeHtml(
             customerName || '-'
           ) +
+
         '</div>' +
 
         '<div class="detail-company-id">' +
+
           'Company ID: ' +
+
           escapeHtml(
             companyId || '-'
           ) +
+
         '</div>' +
 
       '</div>' +
 
+
       '<button ' +
+
         'class="edit-icon-button" ' +
+
         'type="button" ' +
+
         'title="Edit Customer" ' +
+
         'onclick="openCustomerEdit()">' +
+
         '✎' +
+
       '</button>' +
 
     '</div>';
 
 
-  /*
-   * Customer information
-   */
-
-
   html +=
 
-  '<div class="customer-info">' +
+    '<div class="customer-info">' +
 
-    customerInfoItem(
-      'Type',
-      type
-    ) +
+      customerInfoItem(
+        'Type',
+        type
+      ) +
 
-    customerInfoItem(
-      'Status',
-      status
-    ) +
+      customerInfoItem(
+        'Status',
+        status
+      ) +
 
-    customerInfoItem(
-      'Potential',
-      formatPotential(potential)
-    ) +
+      customerInfoItem(
+        'Potential',
+        formatPotential(
+          potential
+        )
+      ) +
 
-    customerInfoItem(
-      'Notes',
-      notes
-    ) +
+      customerInfoItem(
+        'Notes',
+        notes
+      ) +
 
-  '</div>';
+    '</div>';
 
-  /*
-   * Website
-   */
 
   if (website) {
 
@@ -1648,9 +1775,13 @@ function renderCustomerDetail() {
       '<a class="website-link" ' +
 
         'href="' +
+
           escapeAttribute(
-            normalizeUrl(website)
+            normalizeUrl(
+              website
+            )
           ) +
+
         '"' +
 
         'target="_blank">' +
@@ -1662,14 +1793,12 @@ function renderCustomerDetail() {
   }
 
 
-  /*
-   * People
-   */
-
   html +=
 
     '<div class="people-heading">' +
+
       'People' +
+
     '</div>';
 
 
@@ -1678,7 +1807,9 @@ function renderCustomerDetail() {
     '<div id="peopleList">' +
 
       '<div class="loading">' +
+
         'Loading contacts...' +
+
       '</div>' +
 
     '</div>';
@@ -1688,7 +1819,9 @@ function renderCustomerDetail() {
     html;
 
 
-  loadPeople(companyId);
+  loadPeople(
+    companyId
+  );
 
 }
 
@@ -1697,10 +1830,15 @@ function renderCustomerDetail() {
  * GET FIELD
  *************************************************/
 
-function getField(obj, possibleNames) {
+function getField(
+  obj,
+  possibleNames
+) {
 
   if (!obj) {
+
     return '';
+
   }
 
 
@@ -1720,7 +1858,10 @@ function getField(obj, possibleNames) {
       )
       .trim()
       .toLowerCase()
-      .replace(/[\s_-]+/g, '');
+      .replace(
+        /[\s_-]+/g,
+        ''
+      );
 
 
     for (
@@ -1730,22 +1871,26 @@ function getField(obj, possibleNames) {
     ) {
 
       const actual =
-        String(keys[j])
-          .trim()
-          .toLowerCase()
-          .replace(/[\s_-]+/g, '');
+        String(
+          keys[j]
+        )
+        .trim()
+        .toLowerCase()
+        .replace(
+          /[\s_-]+/g,
+          ''
+        );
 
 
-      if (actual === wanted) {
+      if (
+        actual === wanted
+      ) {
 
         const value =
-          obj[keys[j]];
+          obj[
+            keys[j]
+          ];
 
-
-        /*
-         * Never display literal
-         * undefined / null.
-         */
 
         if (
           value === undefined ||
@@ -1770,6 +1915,7 @@ function getField(obj, possibleNames) {
 
 }
 
+
 /*************************************************
  * CUSTOMER INFO ITEM
  *************************************************/
@@ -1784,11 +1930,19 @@ function customerInfoItem(
     '<div class="customer-info-item">' +
 
       '<div class="customer-info-label">' +
-        escapeHtml(label) +
+
+        escapeHtml(
+          label
+        ) +
+
       '</div>' +
 
       '<div class="customer-info-value">' +
-        escapeHtml(value || '-') +
+
+        escapeHtml(
+          value || '-'
+        ) +
+
       '</div>' +
 
     '</div>'
@@ -1797,11 +1951,14 @@ function customerInfoItem(
 
 }
 
+
 /*************************************************
  * FORMAT POTENTIAL
  *************************************************/
 
-function formatPotential(value) {
+function formatPotential(
+  value
+) {
 
   if (
     value === null ||
@@ -1817,8 +1974,14 @@ function formatPotential(value) {
   const number =
     Number(
       String(value)
-        .replace(/,/g, '')
-        .replace(/₹/g, '')
+        .replace(
+          /,/g,
+          ''
+        )
+        .replace(
+          /₹/g,
+          ''
+        )
     );
 
 
@@ -1841,12 +2004,14 @@ function formatPotential(value) {
  * LOAD PEOPLE
  *************************************************/
 
-function loadPeople(companyId) {
+function loadPeople(
+  companyId
+) {
 
   google.script.run
 
     .withSuccessHandler(
-      function (people) {
+      function(people) {
 
         renderPeople(
           people || []
@@ -1856,7 +2021,7 @@ function loadPeople(companyId) {
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         const container =
           document.getElementById(
@@ -1876,7 +2041,10 @@ function loadPeople(companyId) {
 
         }
 
-        console.error(error);
+
+        console.error(
+          error
+        );
 
       }
     )
@@ -1887,277 +2055,378 @@ function loadPeople(companyId) {
 
 }
 
+
 /*************************************************
  * RENDER PEOPLE
  *************************************************/
 
-function renderPeople(people) {
+function renderPeople(
+  people
+) {
 
   const container =
-    document.getElementById('peopleList');
+    document.getElementById(
+      'peopleList'
+    );
+
 
   if (!container) {
+
     return;
+
   }
 
-  container.innerHTML = '';
 
-  /*
-   * No contacts
-   */
+  container.innerHTML =
+    '';
 
-  if (!people || !people.length) {
+
+  if (
+    !people ||
+    !people.length
+  ) {
 
     const message =
-      document.createElement('div');
+      document.createElement(
+        'div'
+      );
+
 
     message.className =
       'no-contacts';
 
+
     message.textContent =
       'No contact details available.';
 
-    container.appendChild(message);
+
+    container.appendChild(
+      message
+    );
 
   }
 
 
-  /*
-   * Existing contacts
-   */
+  if (
+    people &&
+    people.length
+  ) {
 
-  if (people && people.length) {
+    people.sort(
+      function(a, b) {
 
-  /*
-   * SORT CONTACTS A TO Z BY NAME
-   * This changes only the display order.
-   * Google Sheet order is not changed.
-   */
+        const nameA =
+          String(
+            getField(
+              a,
+              [
+                'name',
+                'Name'
+              ]
+            ) || ''
+          )
+          .trim()
+          .toLowerCase();
 
-  people.sort(function(a, b) {
 
-    const nameA =
-      String(
-        getField(a, ['name', 'Name']) || ''
-      )
-      .trim()
-      .toLowerCase();
+        const nameB =
+          String(
+            getField(
+              b,
+              [
+                'name',
+                'Name'
+              ]
+            ) || ''
+          )
+          .trim()
+          .toLowerCase();
 
-    const nameB =
-      String(
-        getField(b, ['name', 'Name']) || ''
-      )
-      .trim()
-      .toLowerCase();
 
-    return nameA.localeCompare(
-      nameB,
-      undefined,
-      {
-        sensitivity: 'base'
+        return nameA.localeCompare(
+          nameB,
+          undefined,
+          {
+            sensitivity:
+              'base'
+          }
+        );
+
       }
     );
 
-  });
+
+    people.forEach(
+      function(person) {
+
+        const name =
+          getField(
+            person,
+            [
+              'name',
+              'Name'
+            ]
+          );
 
 
-  people.forEach(function(person) {
-
-      const name =
-        getField(
-          person,
-          ['name', 'Name']
-        );
-
-      const designation =
-        getField(
-          person,
-          ['designation', 'Designation']
-        );
-
-      const phone =
-        getField(
-          person,
-          ['phone', 'Phone']
-        );
-
-      const email =
-        getField(
-          person,
-          ['email', 'Email']
-        );
-
-      const visitingCard =
-        getField(
-          person,
-          [
-            'visitingCardUrl',
-            'visitingCard',
-            'Visiting Card',
-            'photo',
-            'Photo'
-          ]
-        );
-
-      const peopleId =
-        getField(
-          person,
-          [
-            'peopleId',
-            'People ID'
-          ]
-        );
+        const designation =
+          getField(
+            person,
+            [
+              'designation',
+              'Designation'
+            ]
+          );
 
 
-      const card =
-        document.createElement('div');
-
-      card.className =
-        'person-card';
-
-
-      let html = '';
-
-
-      html +=
-
-        '<div class="person-header">' +
-
-          '<div class="person-name">' +
-            escapeHtml(name || '-') +
-          '</div>' +
-
-          '<button ' +
-            'class="person-edit-button" ' +
-            'type="button" ' +
-            'title="Edit Contact" ' +
-            'onclick="openPersonEdit(\'' +
-              escapeAttribute(peopleId) +
-            '\')">' +
-
-            '✎' +
-
-          '</button>' +
-
-        '</div>';
+        const phone =
+          getField(
+            person,
+            [
+              'phone',
+              'Phone'
+            ]
+          );
 
 
-      if (designation) {
+        const email =
+          getField(
+            person,
+            [
+              'email',
+              'Email'
+            ]
+          );
+
+
+        const visitingCard =
+          getField(
+            person,
+            [
+              'visitingCardUrl',
+              'visitingCard',
+              'Visiting Card',
+              'photo',
+              'Photo'
+            ]
+          );
+
+
+        const peopleId =
+          getField(
+            person,
+            [
+              'peopleId',
+              'People ID'
+            ]
+          );
+
+
+        const card =
+          document.createElement(
+            'div'
+          );
+
+
+        card.className =
+          'person-card';
+
+
+        let html = '';
+
 
         html +=
 
-          '<div class="person-designation">' +
-            escapeHtml(designation) +
-          '</div>';
+          '<div class="person-header">' +
 
-      }
+            '<div class="person-name">' +
 
-
-      if (phone) {
-
-        html +=
-
-          '<div class="person-row">' +
-
-            '<span class="contact-label">' +
-              'Phone:' +
-            '</span>' +
-
-            '<span class="contact-value">' +
-
-              '<a href="tel:' +
-                escapeAttribute(phone) +
-              '">' +
-
-                escapeHtml(phone) +
-
-              '</a>' +
-
-            '</span>' +
-
-          '</div>';
-
-      }
-
-
-      if (email) {
-
-        html +=
-
-          '<div class="person-row">' +
-
-            '<span class="contact-label">' +
-              'Email:' +
-            '</span>' +
-
-            '<span class="contact-value">' +
-
-              '<a href="mailto:' +
-                escapeAttribute(email) +
-              '">' +
-
-                escapeHtml(email) +
-
-              '</a>' +
-
-            '</span>' +
-
-          '</div>';
-
-      }
-
-
-      if (visitingCard) {
-
-        html +=
-
-          '<button ' +
-            'type="button" ' +
-            'class="visiting-card" ' +
-            'onclick="toggleVisitingCard(this)" ' +
-            'data-card-url="' +
-              escapeAttribute(
-                normalizeUrl(visitingCard)
+              escapeHtml(
+                name || '-'
               ) +
-            '">' +
 
-            'View Visiting Card' +
+            '</div>' +
 
-          '</button>' +
+            '<button ' +
 
-          '<div class="visiting-card-preview hidden">' +
+              'class="person-edit-button" ' +
 
-            '<img ' +
-              'src="' +
+              'type="button" ' +
+
+              'title="Edit Contact" ' +
+
+              'onclick="openPersonEdit(\'' +
+
                 escapeAttribute(
-                  normalizeUrl(visitingCard)
+                  peopleId
                 ) +
-              '" ' +
-              'alt="Visiting Card" ' +
-              'loading="lazy">' +
+
+              '\')">' +
+
+              '✎' +
+
+            '</button>' +
 
           '</div>';
 
+
+        if (designation) {
+
+          html +=
+
+            '<div class="person-designation">' +
+
+              escapeHtml(
+                designation
+              ) +
+
+            '</div>';
+
+        }
+
+
+        if (phone) {
+
+          html +=
+
+            '<div class="person-row">' +
+
+              '<span class="contact-label">' +
+
+                'Phone:' +
+
+              '</span>' +
+
+              '<span class="contact-value">' +
+
+                '<a href="tel:' +
+
+                  escapeAttribute(
+                    phone
+                  ) +
+
+                '">' +
+
+                  escapeHtml(
+                    phone
+                  ) +
+
+                '</a>' +
+
+              '</span>' +
+
+            '</div>';
+
+        }
+
+
+        if (email) {
+
+          html +=
+
+            '<div class="person-row">' +
+
+              '<span class="contact-label">' +
+
+                'Email:' +
+
+              '</span>' +
+
+              '<span class="contact-value">' +
+
+                '<a href="mailto:' +
+
+                  escapeAttribute(
+                    email
+                  ) +
+
+                '">' +
+
+                  escapeHtml(
+                    email
+                  ) +
+
+                '</a>' +
+
+              '</span>' +
+
+            '</div>';
+
+        }
+
+
+        if (visitingCard) {
+
+          html +=
+
+            '<button ' +
+
+              'type="button" ' +
+
+              'class="visiting-card" ' +
+
+              'onclick="toggleVisitingCard(this)" ' +
+
+              'data-card-url="' +
+
+                escapeAttribute(
+                  normalizeUrl(
+                    visitingCard
+                  )
+                ) +
+
+              '">' +
+
+              'View Visiting Card' +
+
+            '</button>' +
+
+
+            '<div class="visiting-card-preview hidden">' +
+
+              '<img ' +
+
+                'src="' +
+
+                  escapeAttribute(
+                    normalizeUrl(
+                      visitingCard
+                    )
+                  ) +
+
+                '" ' +
+
+                'alt="Visiting Card" ' +
+
+                'loading="lazy">' +
+
+            '</div>';
+
+        }
+
+
+        card.innerHTML =
+          html;
+
+
+        container.appendChild(
+          card
+        );
+
       }
-
-
-      card.innerHTML =
-        html;
-
-
-      container.appendChild(card);
-
-    });
+    );
 
   }
 
 
   /*
-   * ADD CONTACT BUTTON
+   * ADD CONTACT
    */
 
   const addButton =
-    document.createElement('button');
+    document.createElement(
+      'button'
+    );
 
 
   addButton.type =
@@ -2170,45 +2439,6 @@ function renderPeople(people) {
 
   addButton.textContent =
     '+ Add Contact';
-
-
-  /*
-   * Make the button clearly visible
-   * without depending on CSS.
-   */
-
-  addButton.style.display =
-    'block';
-
-  addButton.style.width =
-    '100%';
-
-  addButton.style.margin =
-    '14px 0 20px 0';
-
-  addButton.style.padding =
-    '10px 14px';
-
-  addButton.style.background =
-    '#198754';
-
-  addButton.style.color =
-    '#ffffff';
-
-  addButton.style.border =
-    '0';
-
-  addButton.style.borderRadius =
-    '6px';
-
-  addButton.style.fontSize =
-    '14px';
-
-  addButton.style.fontWeight =
-    '600';
-
-  addButton.style.cursor =
-    'pointer';
 
 
   addButton.addEventListener(
@@ -2227,35 +2457,53 @@ function renderPeople(people) {
 
 }
 
+
 /*************************************************
  * TOGGLE VISITING CARD
  *************************************************/
 
-function toggleVisitingCard(button) {
+function toggleVisitingCard(
+  button
+) {
 
   if (!button) {
+
     return;
+
   }
+
 
   const preview =
     button.nextElementSibling;
 
+
   if (!preview) {
+
     return;
+
   }
 
+
   if (
-    preview.classList.contains('hidden')
+    preview.classList.contains(
+      'hidden'
+    )
   ) {
 
-    preview.classList.remove('hidden');
+    preview.classList.remove(
+      'hidden'
+    );
+
 
     button.textContent =
       'Hide Visiting Card';
 
   } else {
 
-    preview.classList.add('hidden');
+    preview.classList.add(
+      'hidden'
+    );
+
 
     button.textContent =
       'View Visiting Card';
@@ -2341,26 +2589,30 @@ function closeCustomerPanel() {
     );
 
 
-  activeCustomer = null;
+  activeCustomer =
+    null;
 
-restoreUniversalSearch();
+
+  restoreUniversalSearch();
 
 }
 
 
 /*************************************************
- * EDIT CUSTOMER
+ * CUSTOMER EDIT
  *************************************************/
 
 function openCustomerEdit() {
 
   if (!activeCustomer) {
+
     return;
+
   }
 
 
   loadSettingsOptions(
-    function (options) {
+    function(options) {
 
       showCustomerEditForm(
         options
@@ -2411,16 +2663,6 @@ function showCustomerEditForm(
       [
         'industrialArea',
         'Industrial Area'
-      ]
-    );
-
-
-  const industrialHub =
-    getField(
-      customer,
-      [
-        'industrialHub',
-        'Industrial Hub'
       ]
     );
 
@@ -2488,10 +2730,6 @@ function showCustomerEditForm(
   let html = '';
 
 
-  /*
-   * Company ID
-   */
-
   html +=
 
     '<div class="edit-field">' +
@@ -2499,18 +2737,19 @@ function showCustomerEditForm(
       '<label>Company ID</label>' +
 
       '<input ' +
+
         'id="editCompanyId" ' +
+
         'value="' +
-          escapeAttribute(companyId) +
-        '"' +
-        ' readonly>' +
+
+          escapeAttribute(
+            companyId
+          ) +
+
+        '" readonly>' +
 
     '</div>';
 
-
-  /*
-   * Customer Name
-   */
 
   html +=
 
@@ -2519,17 +2758,19 @@ function showCustomerEditForm(
       '<label>Customer Name</label>' +
 
       '<input ' +
+
         'id="editCustomerName" ' +
+
         'value="' +
-          escapeAttribute(customerName) +
+
+          escapeAttribute(
+            customerName
+          ) +
+
         '">' +
 
     '</div>';
 
-
-  /*
-   * Industrial Area
-   */
 
   html += createSelectHtml(
 
@@ -2537,33 +2778,12 @@ function showCustomerEditForm(
 
     'Industrial Area',
 
-    options['Industrial Area'],
+    options['Industrial Area'] || [],
 
     industrialArea
 
   );
 
-
-  /*
-   * Industrial Hub
-   */
-
-  html += createSelectHtml(
-
-    'editIndustrialHub',
-
-    'Industrial Hub',
-
-    options['Industrial Hub'],
-
-    industrialHub
-
-  );
-
-
-  /*
-   * City
-   */
 
   html += createSelectHtml(
 
@@ -2571,16 +2791,12 @@ function showCustomerEditForm(
 
     'City',
 
-    options['City'],
+    options['City'] || [],
 
     city
 
   );
 
-
-  /*
-   * Type
-   */
 
   html += createSelectHtml(
 
@@ -2588,16 +2804,12 @@ function showCustomerEditForm(
 
     'Type',
 
-    options['Type'],
+    options['Type'] || [],
 
     type
 
   );
 
-
-  /*
-   * Status
-   */
 
   html += createSelectHtml(
 
@@ -2605,16 +2817,12 @@ function showCustomerEditForm(
 
     'Status',
 
-    options['Status'],
+    options['Status'] || [],
 
     status
 
   );
 
-
-  /*
-   * Potential
-   */
 
   html +=
 
@@ -2623,17 +2831,19 @@ function showCustomerEditForm(
       '<label>Potential</label>' +
 
       '<input ' +
+
         'id="editPotential" ' +
+
         'value="' +
-          escapeAttribute(potential) +
+
+          escapeAttribute(
+            potential
+          ) +
+
         '">' +
 
     '</div>';
 
-
-  /*
-   * Website
-   */
 
   html +=
 
@@ -2642,17 +2852,19 @@ function showCustomerEditForm(
       '<label>Website</label>' +
 
       '<input ' +
+
         'id="editWebsite" ' +
+
         'value="' +
-          escapeAttribute(website) +
+
+          escapeAttribute(
+            website
+          ) +
+
         '">' +
 
     '</div>';
 
-
-  /*
-   * Notes
-   */
 
   html +=
 
@@ -2661,9 +2873,12 @@ function showCustomerEditForm(
       '<label>Notes</label>' +
 
       '<textarea ' +
+
         'id="editNotes">' +
 
-        escapeHtml(notes) +
+        escapeHtml(
+          notes
+        ) +
 
       '</textarea>' +
 
@@ -2729,33 +2944,60 @@ function openEditModal(
       '<div class="edit-modal-header">' +
 
         '<div class="edit-modal-title">' +
-          escapeHtml(title) +
+
+          escapeHtml(
+            title
+          ) +
+
         '</div>' +
 
         '<button ' +
+
           'class="modal-close" ' +
+
+          'type="button" ' +
+
           'onclick="closeEditModal()">' +
+
           '×' +
+
         '</button>' +
 
       '</div>' +
 
+
       '<div class="edit-modal-body">' +
+
         content +
+
       '</div>' +
+
 
       '<div class="edit-modal-footer">' +
 
         '<button ' +
+
           'class="cancel-button" ' +
+
+          'type="button" ' +
+
           'onclick="closeEditModal()">' +
+
           'Cancel' +
+
         '</button>' +
 
+
         '<button ' +
+
           'class="save-button" ' +
-          'id="editSaveButton">' +
+
+          'id="editSaveButton" ' +
+
+          'type="button">' +
+
           'Save' +
+
         '</button>' +
 
       '</div>' +
@@ -2765,7 +3007,9 @@ function openEditModal(
 
   modal
     .classList
-    .remove('hidden');
+    .remove(
+      'hidden'
+    );
 
 
   document
@@ -2794,7 +3038,9 @@ function closeEditModal() {
 
     modal
       .classList
-      .add('hidden');
+      .add(
+        'hidden'
+      );
 
   }
 
@@ -2830,14 +3076,6 @@ function saveCustomer() {
       document
         .getElementById(
           'editIndustrialArea'
-        )
-        .value
-        .trim(),
-
-    industrialHub:
-      document
-        .getElementById(
-          'editIndustrialHub'
         )
         .value
         .trim(),
@@ -2899,7 +3137,8 @@ function saveCustomer() {
     );
 
 
-  button.disabled = true;
+  button.disabled =
+    true;
 
   button.textContent =
     'Saving...';
@@ -2908,32 +3147,21 @@ function saveCustomer() {
   google.script.run
 
     .withSuccessHandler(
-      function () {
+      function() {
 
-        /*
-         * Update local customer data
-         */
+        Object.keys(data)
+          .forEach(
+            function(key) {
 
-        Object.keys(data).forEach(
-          function (key) {
+              activeCustomer[key] =
+                data[key];
 
-            activeCustomer[key] =
-              data[key];
+            }
+          );
 
-          }
-        );
-
-
-        /*
-         * Close modal
-         */
 
         closeEditModal();
 
-
-        /*
-         * Refresh customer details
-         */
 
         refreshCustomerDetails();
 
@@ -2941,7 +3169,7 @@ function saveCustomer() {
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         button.disabled =
           false;
@@ -2951,7 +3179,9 @@ function saveCustomer() {
 
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -2972,7 +3202,9 @@ function saveCustomer() {
 function refreshCustomerDetails() {
 
   if (!activeCustomer) {
+
     return;
+
   }
 
 
@@ -2986,13 +3218,7 @@ function refreshCustomerDetails() {
     );
 
 
-  /*
-   * Reload the selected hub.
-   * This makes sure the app has
-   * the latest Sheet data.
-   */
-
-  if (!activeHub) {
+  if (!activeArea) {
 
     renderCustomerDetail();
 
@@ -3004,7 +3230,7 @@ function refreshCustomerDetails() {
   google.script.run
 
     .withSuccessHandler(
-      function (data) {
+      function(data) {
 
         const updatedCustomers =
           data || [];
@@ -3012,7 +3238,7 @@ function refreshCustomerDetails() {
 
         const updated =
           updatedCustomers.find(
-            function (customer) {
+            function(customer) {
 
               const id =
                 getField(
@@ -3022,6 +3248,7 @@ function refreshCustomerDetails() {
                     'Company ID'
                   ]
                 );
+
 
               return String(id) ===
                 String(companyId);
@@ -3048,20 +3275,15 @@ function refreshCustomerDetails() {
     )
 
     .withFailureHandler(
-      function () {
-
-        /*
-         * If refresh fails,
-         * at least show local data.
-         */
+      function() {
 
         renderCustomerDetail();
 
       }
     )
 
-    .getCustomersByHub(
-      activeHub.hub
+    .getCustomersByArea(
+      activeArea.industrialArea
     );
 
 }
@@ -3075,13 +3297,8 @@ function openPersonEdit(
   peopleId
 ) {
 
-  /*
-   * Load Designation dropdown
-   * from Settings.
-   */
-
   loadSettingsOptions(
-    function (options) {
+    function(options) {
 
       if (peopleId) {
 
@@ -3117,7 +3334,7 @@ function loadPersonForEdit(
   google.script.run
 
     .withSuccessHandler(
-      function (person) {
+      function(person) {
 
         showPersonEditForm(
           person,
@@ -3128,7 +3345,7 @@ function loadPersonForEdit(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         alert(
           getErrorMessage(error)
@@ -3236,12 +3453,18 @@ function showPersonEditForm(
 
   html +=
 
-    '<input type="hidden" ' +
+    '<input ' +
+
+      'type="hidden" ' +
+
       'id="editPeopleId" ' +
+
       'value="' +
+
         escapeAttribute(
           peopleId
         ) +
+
       '">';
 
 
@@ -3252,10 +3475,13 @@ function showPersonEditForm(
       '<label>Company ID</label>' +
 
       '<input ' +
+
         'value="' +
+
           escapeAttribute(
             companyId
           ) +
+
         '" readonly>' +
 
     '</div>';
@@ -3268,22 +3494,19 @@ function showPersonEditForm(
       '<label>Name</label>' +
 
       '<input ' +
+
         'id="editPersonName" ' +
+
         'value="' +
+
           escapeAttribute(
             name
           ) +
+
         '">' +
 
     '</div>';
 
-
-  /*
-   * DESIGNATION DROPDOWN
-   *
-   * Values come from Settings
-   * column G.
-   */
 
   html += createSelectHtml(
 
@@ -3291,7 +3514,7 @@ function showPersonEditForm(
 
     'Designation',
 
-    options['Designation'],
+    options['Designation'] || [],
 
     designation
 
@@ -3305,11 +3528,15 @@ function showPersonEditForm(
       '<label>Phone</label>' +
 
       '<input ' +
+
         'id="editPersonPhone" ' +
+
         'value="' +
+
           escapeAttribute(
             phone
           ) +
+
         '">' +
 
     '</div>';
@@ -3322,11 +3549,15 @@ function showPersonEditForm(
       '<label>Email</label>' +
 
       '<input ' +
+
         'id="editPersonEmail" ' +
+
         'value="' +
+
           escapeAttribute(
             email
           ) +
+
         '">' +
 
     '</div>';
@@ -3334,32 +3565,53 @@ function showPersonEditForm(
 
   html +=
 
-  '<div class="edit-field">' +
+    '<div class="edit-field">' +
 
-    '<label>Visiting Card</label>' +
+      '<label>Visiting Card</label>' +
 
-    '<input ' +
-      'type="file" ' +
-      'id="editPersonPhotoFile" ' +
-      'accept="image/*">' +
+      '<input ' +
 
-    '<input ' +
-      'type="hidden" ' +
-      'id="editPersonPhoto" ' +
-      'value="' +
-        escapeAttribute(photo) +
-      '">' +
+        'type="file" ' +
 
-    (
-      photo
-        ? '<div class="current-card-file">' +
-            'Current: ' +
-            escapeHtml(photo) +
-          '</div>'
-        : ''
-    ) +
+        'id="editPersonPhotoFile" ' +
 
-  '</div>';
+        'accept="image/*">' +
+
+
+      '<input ' +
+
+        'type="hidden" ' +
+
+        'id="editPersonPhoto" ' +
+
+        'value="' +
+
+          escapeAttribute(
+            photo
+          ) +
+
+        '">' +
+
+
+      (
+
+        photo
+
+          ? '<div class="current-card-file">' +
+
+              'Current: ' +
+
+              escapeHtml(
+                photo
+              ) +
+
+            '</div>'
+
+          : ''
+
+      ) +
+
+    '</div>';
 
 
   openEditModal(
@@ -3497,11 +3749,6 @@ function savePerson() {
   };
 
 
-  /*
-   * No new image.
-   * Keep existing card.
-   */
-
   if (!file) {
 
     sendPersonToServer(
@@ -3515,10 +3762,6 @@ function savePerson() {
 
   }
 
-
-  /*
-   * Validate image.
-   */
 
   if (
     !file.type ||
@@ -3541,10 +3784,6 @@ function savePerson() {
 
   }
 
-
-  /*
-   * Maximum 5 MB.
-   */
 
   if (
     file.size >
@@ -3571,7 +3810,7 @@ function savePerson() {
 
 
   reader.onload =
-    function () {
+    function() {
 
       const result =
         String(
@@ -3608,7 +3847,7 @@ function savePerson() {
 
 
   reader.onerror =
-    function () {
+    function() {
 
       button.disabled =
         false;
@@ -3631,7 +3870,7 @@ function savePerson() {
 
 
 /*************************************************
- * SEND PERSON TO SERVER
+ * SEND PERSON
  *************************************************/
 
 function sendPersonToServer(
@@ -3644,7 +3883,7 @@ function sendPersonToServer(
   google.script.run
 
     .withSuccessHandler(
-      function () {
+      function() {
 
         closeEditModal();
 
@@ -3654,7 +3893,7 @@ function sendPersonToServer(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         button.disabled =
           false;
@@ -3680,56 +3919,12 @@ function sendPersonToServer(
 
 }
 
-/*************************************************
- * SAVE PERSON DATA
- *************************************************/
-
-function savePersonData(
-  peopleId,
-  companyId,
-  data,
-  button
-) {
-
-  google.script.run
-
-    .withSuccessHandler(
-      function () {
-
-        closeEditModal();
-
-        renderCustomerDetail();
-
-      }
-    )
-
-    .withFailureHandler(
-      function (error) {
-
-        button.disabled =
-          false;
-
-        button.textContent =
-          'Save';
-
-
-        alert(
-          getErrorMessage(error)
-        );
-
-      }
-    )
-
-    .savePersonRecord(
-      peopleId,
-      companyId,
-      data
-    );
-
-}
 
 /*************************************************
  * LOAD SETTINGS OPTIONS
+ *
+ * Industrial Area is obtained
+ * from Areas sheet, not Settings.
  *************************************************/
 
 function loadSettingsOptions(
@@ -3750,21 +3945,66 @@ function loadSettingsOptions(
   google.script.run
 
     .withSuccessHandler(
-      function (data) {
+      function(data) {
 
         settingsOptions =
           data || {};
 
 
-        callback(
-          settingsOptions
-        );
+        /*
+         * Industrial Area master list
+         * comes directly from Areas.
+         */
+
+        google.script.run
+
+          .withSuccessHandler(
+            function(areaData) {
+
+              settingsOptions[
+                'Industrial Area'
+              ] =
+                (areaData || [])
+                  .map(
+                    function(area) {
+
+                      return area
+                        .industrialArea;
+
+                    }
+                  );
+
+
+              callback(
+                settingsOptions
+              );
+
+            }
+          )
+
+          .withFailureHandler(
+            function() {
+
+              settingsOptions[
+                'Industrial Area'
+              ] =
+                [];
+
+
+              callback(
+                settingsOptions
+              );
+
+            }
+          )
+
+          .getIndustrialAreas();
 
       }
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         console.error(
           'Settings error:',
@@ -3803,6 +4043,37 @@ function createSelectHtml(
     options || [];
 
 
+  /*
+   * Make unique values.
+   */
+
+  options =
+    Array.from(
+      new Set(
+        options
+      )
+    );
+
+
+  /*
+   * If current value isn't
+   * in the master list, retain it.
+   */
+
+  if (
+    selectedValue &&
+    options.indexOf(
+      selectedValue
+    ) === -1
+  ) {
+
+    options.unshift(
+      selectedValue
+    );
+
+  }
+
+
   let html =
 
     '<div class="edit-field">' +
@@ -3817,7 +4088,9 @@ function createSelectHtml(
 
       '<select id="' +
 
-        escapeAttribute(id) +
+        escapeAttribute(
+          id
+        ) +
 
       '">';
 
@@ -3828,13 +4101,15 @@ function createSelectHtml(
 
       'Select ' +
 
-      escapeHtml(label) +
+      escapeHtml(
+        label
+      ) +
 
     '</option>';
 
 
   options.forEach(
-    function (option) {
+    function(option) {
 
       const selected =
         String(option) ===
@@ -3852,9 +4127,11 @@ function createSelectHtml(
         '<option ' +
 
           'value="' +
+
             escapeAttribute(
               option
             ) +
+
           '"' +
 
           selected +
@@ -3884,7 +4161,7 @@ function createSelectHtml(
 
 
 /*************************************************
- * OPEN GOOGLE SHEET
+ * OPEN SHEET
  *************************************************/
 
 function openSheet() {
@@ -3892,7 +4169,7 @@ function openSheet() {
   google.script.run
 
     .withSuccessHandler(
-      function (url) {
+      function(url) {
 
         if (url) {
 
@@ -3907,10 +4184,12 @@ function openSheet() {
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         showError(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -3927,82 +4206,73 @@ function openSheet() {
 
 function resetHomeView() {
 
-  /*
-   * Close panels
-   */
-
-  const customerView =
-    document.getElementById(
-      'customerView'
-    );
-
-  if (customerView) {
-
-    customerView.classList.add(
-      'hidden'
-    );
-
-  }
-
-  const allCustomersView =
-  document.getElementById(
+  [
+    'customerView',
+    'detailView',
     'allCustomersView'
+  ]
+  .forEach(
+    function(id) {
+
+      const element =
+        document.getElementById(
+          id
+        );
+
+
+      if (element) {
+
+        element.classList.add(
+          'hidden'
+        );
+
+      }
+
+    }
   );
 
-if (allCustomersView) {
 
-  allCustomersView.classList.add(
-    'hidden'
-  );
-
-}
+  activeAreaIndex =
+    -1;
 
 
-  const detailView =
-    document.getElementById(
-      'detailView'
-    );
-
-  if (detailView) {
-
-    detailView.classList.add(
-      'hidden'
-    );
-
-  }
+  activeArea =
+    null;
 
 
-  /*
-   * Clear selection
-   */
-
-  activeHubIndex = -1;
-
-  activeHub = null;
-
-  activeCustomer = null;
-
-  customers = [];
+  activeCustomer =
+    null;
 
 
-  /*
-   * Reset map
-   */
+  customers =
+    [];
+
+
+  customerListMode =
+    'area';
+
 
   if (map) {
 
     map.panTo({
 
-      lat: 12.9716,
+      lat:
+        12.9716,
 
-      lng: 77.5946
+      lng:
+        77.5946
 
     });
 
 
-    map.setZoom(11);
+    map.setZoom(
+      11
+    );
 
   }
+
+
+  restoreUniversalSearch();
 
 }
 
@@ -4011,7 +4281,9 @@ if (allCustomersView) {
  * LOADING
  *************************************************/
 
-function showLoading(show) {
+function showLoading(
+  show
+) {
 
   const loading =
     document.getElementById(
@@ -4020,7 +4292,9 @@ function showLoading(show) {
 
 
   if (!loading) {
+
     return;
+
   }
 
 
@@ -4045,7 +4319,9 @@ function showLoading(show) {
  * ERROR
  *************************************************/
 
-function showError(message) {
+function showError(
+  message
+) {
 
   const error =
     document.getElementById(
@@ -4054,7 +4330,9 @@ function showError(message) {
 
 
   if (!error) {
+
     return;
+
   }
 
 
@@ -4083,7 +4361,9 @@ function hideError() {
 
 
   if (!error) {
+
     return;
+
   }
 
 
@@ -4098,7 +4378,9 @@ function hideError() {
  * NORMALIZE URL
  *************************************************/
 
-function normalizeUrl(url) {
+function normalizeUrl(
+  url
+) {
 
   let value =
     String(
@@ -4107,7 +4389,9 @@ function normalizeUrl(url) {
 
 
   if (!value) {
+
     return '';
+
   }
 
 
@@ -4133,7 +4417,9 @@ function normalizeUrl(url) {
  * ESCAPE HTML
  *************************************************/
 
-function escapeHtml(value) {
+function escapeHtml(
+  value
+) {
 
   return String(
     value || ''
@@ -4171,7 +4457,9 @@ function escapeHtml(value) {
  * ESCAPE ATTRIBUTE
  *************************************************/
 
-function escapeAttribute(value) {
+function escapeAttribute(
+  value
+) {
 
   return String(
     value || ''
@@ -4204,7 +4492,9 @@ function escapeAttribute(value) {
  * ERROR MESSAGE
  *************************************************/
 
-function getErrorMessage(error) {
+function getErrorMessage(
+  error
+) {
 
   if (!error) {
 
@@ -4214,7 +4504,8 @@ function getErrorMessage(error) {
 
 
   if (
-    typeof error === 'string'
+    typeof error ===
+    'string'
   ) {
 
     return error;
@@ -4232,22 +4523,21 @@ function getErrorMessage(error) {
 
 }
 
+
 /*************************************************
  * ADD CUSTOMER BUTTON
  *************************************************/
 
 function addCustomerButton() {
 
-  /*
-   * Do not create twice.
-   */
-
   if (
     document.getElementById(
       'addCustomerButton'
     )
   ) {
+
     return;
+
   }
 
 
@@ -4258,7 +4548,9 @@ function addCustomerButton() {
 
 
   if (!sheetButton) {
+
     return;
+
   }
 
 
@@ -4284,48 +4576,41 @@ function addCustomerButton() {
     'Add Customer';
 
 
-  button.innerHTML =
+  button.textContent =
     '+ Customer';
 
-    const customerCount =
-  document.createElement(
-    'span'
-  );
-
-customerCount.id =
-  'totalCustomerCount';
-
-customerCount.className =
-  'total-customer-count';
-
-customerCount.textContent =
-  '0 Customers';
-
-customerCount.style.cursor =
-  'pointer';
-
-customerCount.title =
-  'Show All Customers';
-
-customerCount.addEventListener(
-  'click',
-  openAllCustomers
-);
-
-customerCount.title =
-  'Show All Customers';
-
-customerCount.style.cursor =
-  'pointer';
-
-customerCount.addEventListener(
-  'click',
-  openAllCustomers
-);
 
   button.addEventListener(
     'click',
     openCustomerAdd
+  );
+
+
+  const customerCount =
+    document.createElement(
+      'span'
+    );
+
+
+  customerCount.id =
+    'totalCustomerCount';
+
+
+  customerCount.className =
+    'total-customer-count';
+
+
+  customerCount.textContent =
+    '0 Customers';
+
+
+  customerCount.title =
+    'Show All Customers';
+
+
+  customerCount.addEventListener(
+    'click',
+    openAllCustomers
   );
 
 
@@ -4336,12 +4621,16 @@ customerCount.addEventListener(
       sheetButton
     );
 
-    button.parentNode.insertBefore(
-  customerCount,
+
   sheetButton
-);
+    .parentNode
+    .insertBefore(
+      customerCount,
+      sheetButton
+    );
 
 }
+
 
 /*************************************************
  * OPEN ADD CUSTOMER
@@ -4350,12 +4639,12 @@ customerCount.addEventListener(
 function openCustomerAdd() {
 
   loadSettingsOptions(
-    function (options) {
+    function(options) {
 
       google.script.run
 
         .withSuccessHandler(
-          function (companyId) {
+          function(companyId) {
 
             showCustomerAddForm(
               options,
@@ -4366,10 +4655,12 @@ function openCustomerAdd() {
         )
 
         .withFailureHandler(
-          function (error) {
+          function(error) {
 
             alert(
-              getErrorMessage(error)
+              getErrorMessage(
+                error
+              )
             );
 
           }
@@ -4399,10 +4690,6 @@ function showCustomerAddForm(
   let html = '';
 
 
-  /*
-   * Company ID
-   */
-
   html +=
 
     '<div class="edit-field">' +
@@ -4410,18 +4697,19 @@ function showCustomerAddForm(
       '<label>Company ID</label>' +
 
       '<input ' +
+
         'id="addCompanyId" ' +
+
         'value="' +
-          escapeAttribute(companyId) +
-        '"' +
-        'readonly>' +
+
+          escapeAttribute(
+            companyId
+          ) +
+
+        '" readonly>' +
 
     '</div>';
 
-
-  /*
-   * Customer Name
-   */
 
   html +=
 
@@ -4430,15 +4718,13 @@ function showCustomerAddForm(
       '<label>Customer Name</label>' +
 
       '<input ' +
+
         'id="addCustomerName" ' +
+
         'placeholder="Enter customer name">' +
 
     '</div>';
 
-
-  /*
-   * Industrial Area
-   */
 
   html += createSelectHtml(
 
@@ -4446,33 +4732,12 @@ function showCustomerAddForm(
 
     'Industrial Area',
 
-    options['Industrial Area'],
+    options['Industrial Area'] || [],
 
     ''
 
   );
 
-
-  /*
-   * Industrial Hub
-   */
-
-  html += createSelectHtml(
-
-    'addIndustrialHub',
-
-    'Industrial Hub',
-
-    options['Industrial Hub'],
-
-    ''
-
-  );
-
-
-  /*
-   * City
-   */
 
   html += createSelectHtml(
 
@@ -4480,16 +4745,12 @@ function showCustomerAddForm(
 
     'City',
 
-    options['City'],
+    options['City'] || [],
 
     ''
 
   );
 
-
-  /*
-   * Type
-   */
 
   html += createSelectHtml(
 
@@ -4497,16 +4758,12 @@ function showCustomerAddForm(
 
     'Type',
 
-    options['Type'],
+    options['Type'] || [],
 
     ''
 
   );
 
-
-  /*
-   * Status
-   */
 
   html += createSelectHtml(
 
@@ -4514,16 +4771,12 @@ function showCustomerAddForm(
 
     'Status',
 
-    options['Status'],
+    options['Status'] || [],
 
     ''
 
   );
 
-
-  /*
-   * Potential
-   */
 
   html +=
 
@@ -4532,15 +4785,13 @@ function showCustomerAddForm(
       '<label>Potential</label>' +
 
       '<input ' +
+
         'id="addPotential" ' +
+
         'placeholder="Enter potential">' +
 
     '</div>';
 
-
-  /*
-   * Website
-   */
 
   html +=
 
@@ -4549,15 +4800,13 @@ function showCustomerAddForm(
       '<label>Website</label>' +
 
       '<input ' +
+
         'id="addWebsite" ' +
+
         'placeholder="https://">' +
 
     '</div>';
 
-
-  /*
-   * Notes
-   */
 
   html +=
 
@@ -4566,7 +4815,9 @@ function showCustomerAddForm(
       '<label>Notes</label>' +
 
       '<textarea ' +
+
         'id="addNotes" ' +
+
         'placeholder="Notes"></textarea>' +
 
     '</div>';
@@ -4611,14 +4862,6 @@ function saveNewCustomer() {
       document
         .getElementById(
           'addIndustrialArea'
-        )
-        .value
-        .trim(),
-
-    industrialHub:
-      document
-        .getElementById(
-          'addIndustrialHub'
         )
         .value
         .trim(),
@@ -4685,10 +4928,10 @@ function saveNewCustomer() {
   }
 
 
-  if (!data.industrialHub) {
+  if (!data.industrialArea) {
 
     alert(
-      'Please select Industrial Hub.'
+      'Please select Industrial Area.'
     );
 
     return;
@@ -4699,6 +4942,7 @@ function saveNewCustomer() {
   button.disabled =
     true;
 
+
   button.textContent =
     'Saving...';
 
@@ -4706,7 +4950,7 @@ function saveNewCustomer() {
   google.script.run
 
     .withSuccessHandler(
-      function (companyId) {
+      function(companyId) {
 
         closeEditModal();
 
@@ -4717,17 +4961,15 @@ function saveNewCustomer() {
         );
 
 
-        /*
-         * Reload hubs/customer data.
-         */
+        loadAreas();
 
-        loadHubs();
+        loadTotalCustomerCount();
 
       }
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         button.disabled =
           false;
@@ -4737,7 +4979,9 @@ function saveNewCustomer() {
 
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -4748,6 +4992,7 @@ function saveNewCustomer() {
     );
 
 }
+
 
 /*************************************************
  * UNIVERSAL SEARCH
@@ -4760,10 +5005,12 @@ function setupUniversalSearch() {
       'universalSearch'
     );
 
+
   const clear =
     document.getElementById(
       'universalSearchClear'
     );
+
 
   const results =
     document.getElementById(
@@ -4782,12 +5029,13 @@ function setupUniversalSearch() {
   }
 
 
-  let timer = null;
+  let timer =
+    null;
 
 
   input.addEventListener(
     'input',
-    function () {
+    function() {
 
       const query =
         input.value.trim();
@@ -4799,12 +5047,15 @@ function setupUniversalSearch() {
       );
 
 
-      clearTimeout(timer);
+      clearTimeout(
+        timer
+      );
 
 
       if (!query) {
 
-        results.innerHTML = '';
+        results.innerHTML =
+          '';
 
         results.classList.add(
           'hidden'
@@ -4817,7 +5068,7 @@ function setupUniversalSearch() {
 
       timer =
         setTimeout(
-          function () {
+          function() {
 
             performUniversalSearch(
               query
@@ -4833,19 +5084,9 @@ function setupUniversalSearch() {
 
   clear.addEventListener(
     'click',
-    function () {
+    function() {
 
-      input.value = '';
-
-      clear.classList.add(
-        'hidden'
-      );
-
-      results.innerHTML = '';
-
-      results.classList.add(
-        'hidden'
-      );
+      clearUniversalSearch();
 
       input.focus();
 
@@ -4855,7 +5096,7 @@ function setupUniversalSearch() {
 
   document.addEventListener(
     'click',
-    function (event) {
+    function(event) {
 
       const searchBox =
         document.querySelector(
@@ -4911,14 +5152,16 @@ function performUniversalSearch(
   results.innerHTML =
 
     '<div class="universal-search-message">' +
+
       'Searching...' +
+
     '</div>';
 
 
   google.script.run
 
     .withSuccessHandler(
-      function (data) {
+      function(data) {
 
         renderUniversalSearchResults(
           data || []
@@ -4928,14 +5171,16 @@ function performUniversalSearch(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         results.innerHTML =
 
           '<div class="universal-search-message">' +
 
             escapeHtml(
-              getErrorMessage(error)
+              getErrorMessage(
+                error
+              )
             ) +
 
           '</div>';
@@ -4971,7 +5216,8 @@ function renderUniversalSearchResults(
   }
 
 
-  results.innerHTML = '';
+  results.innerHTML =
+    '';
 
 
   if (
@@ -4987,9 +5233,11 @@ function renderUniversalSearchResults(
 
       '</div>';
 
+
     results.classList.remove(
       'hidden'
     );
+
 
     return;
 
@@ -4997,7 +5245,7 @@ function renderUniversalSearchResults(
 
 
   data.forEach(
-    function (item) {
+    function(item) {
 
       const button =
         document.createElement(
@@ -5025,19 +5273,27 @@ function renderUniversalSearchResults(
         '';
 
 
+      /*
+       * INDUSTRIAL AREA
+       */
+
       if (
         item.type ===
-        'hub'
+        'area'
       ) {
 
         icon =
-          'H';
+          'A';
+
 
         title =
-          item.name;
+          item.name ||
+          item.industrialArea ||
+          '';
+
 
         meta =
-          'Industrial Hub · ' +
+          'Industrial Area · ' +
           (
             item.city ||
             ''
@@ -5045,6 +5301,10 @@ function renderUniversalSearchResults(
 
       }
 
+
+      /*
+       * CUSTOMER
+       */
 
       else if (
         item.type ===
@@ -5054,8 +5314,11 @@ function renderUniversalSearchResults(
         icon =
           'C';
 
+
         title =
-          item.name;
+          item.name ||
+          '';
+
 
         meta =
           'Customer · ' +
@@ -5063,14 +5326,19 @@ function renderUniversalSearchResults(
             item.industrialArea ||
             ''
           ) +
-          ' · ' +
           (
-            item.industrialHub ||
-            ''
+            item.city
+              ? ' · ' +
+                item.city
+              : ''
           );
 
       }
 
+
+      /*
+       * PERSON
+       */
 
       else if (
         item.type ===
@@ -5080,8 +5348,11 @@ function renderUniversalSearchResults(
         icon =
           'P';
 
+
         title =
-          item.name;
+          item.name ||
+          '';
+
 
         meta =
           'Contact · ' +
@@ -5132,17 +5403,17 @@ function renderUniversalSearchResults(
 
 
       button.addEventListener(
-  'click',
-  function () {
+        'click',
+        function() {
 
-    hideUniversalSearchResults();
+          hideUniversalSearchResults();
 
-    openUniversalSearchResult(
-      item
-    );
+          openUniversalSearchResult(
+            item
+          );
 
-  }
-);
+        }
+      );
 
 
       results.appendChild(
@@ -5159,8 +5430,9 @@ function renderUniversalSearchResults(
 
 }
 
+
 /*************************************************
- * HIDE SEARCH RESULTS ONLY
+ * HIDE SEARCH RESULTS
  *************************************************/
 
 function hideUniversalSearchResults() {
@@ -5169,6 +5441,7 @@ function hideUniversalSearchResults() {
     document.getElementById(
       'universalSearchResults'
     );
+
 
   if (results) {
 
@@ -5180,8 +5453,9 @@ function hideUniversalSearchResults() {
 
 }
 
+
 /*************************************************
- * RESTORE UNIVERSAL SEARCH
+ * RESTORE SEARCH
  *************************************************/
 
 function restoreUniversalSearch() {
@@ -5191,21 +5465,30 @@ function restoreUniversalSearch() {
       'universalSearch'
     );
 
+
   if (!input) {
+
     return;
+
   }
+
 
   const query =
     input.value.trim();
 
+
   if (!query) {
+
     return;
+
   }
+
 
   const clear =
     document.getElementById(
       'universalSearchClear'
     );
+
 
   if (clear) {
 
@@ -5215,16 +5498,13 @@ function restoreUniversalSearch() {
 
   }
 
-  /*
-   * Search again using the existing
-   * text in the search box.
-   */
 
   performUniversalSearch(
     query
   );
 
 }
+
 
 /*************************************************
  * CLEAR SEARCH
@@ -5237,10 +5517,12 @@ function clearUniversalSearch() {
       'universalSearch'
     );
 
+
   const clear =
     document.getElementById(
       'universalSearchClear'
     );
+
 
   const results =
     document.getElementById(
@@ -5250,7 +5532,8 @@ function clearUniversalSearch() {
 
   if (input) {
 
-    input.value = '';
+    input.value =
+      '';
 
   }
 
@@ -5266,7 +5549,8 @@ function clearUniversalSearch() {
 
   if (results) {
 
-    results.innerHTML = '';
+    results.innerHTML =
+      '';
 
     results.classList.add(
       'hidden'
@@ -5293,26 +5577,29 @@ function openUniversalSearchResult(
 
 
   /*
-   * INDUSTRIAL HUB
+   * INDUSTRIAL AREA
    */
 
   if (
     item.type ===
-    'hub'
+    'area'
   ) {
 
     const index =
-      hubs.findIndex(
-        function (hub) {
+      areas.findIndex(
+        function(area) {
 
           return String(
-            hub.hub || ''
+            area.industrialArea ||
+            ''
           )
           .trim()
           .toLowerCase() ===
 
           String(
-            item.name || ''
+            item.industrialArea ||
+            item.name ||
+            ''
           )
           .trim()
           .toLowerCase();
@@ -5325,7 +5612,7 @@ function openUniversalSearchResult(
       index !== -1
     ) {
 
-      selectHub(
+      selectArea(
         index
       );
 
@@ -5356,7 +5643,7 @@ function openUniversalSearchResult(
 
 
   /*
-   * CONTACT PERSON
+   * PERSON
    */
 
   if (
@@ -5381,10 +5668,15 @@ function openSearchCustomer(
   item
 ) {
 
+  const areaName =
+    item.industrialArea ||
+    '';
+
+
   google.script.run
 
     .withSuccessHandler(
-      function (data) {
+      function(data) {
 
         customers =
           data || [];
@@ -5392,7 +5684,7 @@ function openSearchCustomer(
 
         const index =
           customers.findIndex(
-            function (customer) {
+            function(customer) {
 
               return String(
                 getField(
@@ -5402,11 +5694,13 @@ function openSearchCustomer(
                     'Company ID'
                   ]
                 )
-              ).trim() ===
+              )
+              .trim() ===
 
               String(
                 item.companyId
-              ).trim();
+              )
+              .trim();
 
             }
           );
@@ -5425,18 +5719,19 @@ function openSearchCustomer(
         }
 
 
-        activeHub =
-          hubs.find(
-            function (hub) {
+        activeArea =
+          areas.find(
+            function(area) {
 
               return String(
-                hub.hub || ''
+                area.industrialArea ||
+                ''
               )
               .trim()
               .toLowerCase() ===
 
               String(
-                item.industrialHub || ''
+                areaName
               )
               .trim()
               .toLowerCase();
@@ -5445,15 +5740,21 @@ function openSearchCustomer(
           ) || null;
 
 
-        if (activeHub) {
+        if (activeArea) {
 
-          activeHubIndex =
-            hubs.indexOf(
-              activeHub
+          activeAreaIndex =
+            areas.indexOf(
+              activeArea
             );
 
         }
 
+
+        customerListMode =
+          'area';
+
+
+        showCustomerView();
 
         renderCustomerList();
 
@@ -5465,17 +5766,19 @@ function openSearchCustomer(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         showError(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
     )
 
-    .getCustomersByHub(
-      item.industrialHub
+    .getCustomersByArea(
+      areaName
     );
 
 }
@@ -5492,7 +5795,7 @@ function openSearchPerson(
   google.script.run
 
     .withSuccessHandler(
-      function (customer) {
+      function(customer) {
 
         if (!customer) {
 
@@ -5509,18 +5812,20 @@ function openSearchPerson(
           customer;
 
 
-        activeHub =
-          hubs.find(
-            function (hub) {
+        activeArea =
+          areas.find(
+            function(area) {
 
               return String(
-                hub.hub || ''
+                area.industrialArea ||
+                ''
               )
               .trim()
               .toLowerCase() ===
 
               String(
-                item.industrialHub || ''
+                item.industrialArea ||
+                ''
               )
               .trim()
               .toLowerCase();
@@ -5529,14 +5834,18 @@ function openSearchPerson(
           ) || null;
 
 
-        if (activeHub) {
+        if (activeArea) {
 
-          activeHubIndex =
-            hubs.indexOf(
-              activeHub
+          activeAreaIndex =
+            areas.indexOf(
+              activeArea
             );
 
         }
+
+
+        customerListMode =
+          'area';
 
 
         renderCustomerDetail();
@@ -5547,20 +5856,23 @@ function openSearchPerson(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         showError(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
     )
 
-    .getCustomerByCompanyId(
+    .getCustomerById(
       item.companyId
     );
 
 }
+
 
 /*************************************************
  * SETTINGS BUTTON
@@ -5568,56 +5880,62 @@ function openSearchPerson(
 
 function addSettingsButton() {
 
-  /*
-   * Do not create twice.
-   */
-
   if (
     document.getElementById(
       'settingsButton'
     )
   ) {
+
     return;
+
   }
+
 
   const sheetButton =
     document.getElementById(
       'openSheetButton'
     );
 
+
   if (!sheetButton) {
+
     return;
+
   }
 
+
   const button =
-    document.createElement('button');
+    document.createElement(
+      'button'
+    );
+
 
   button.id =
     'settingsButton';
 
+
   button.type =
     'button';
+
 
   button.className =
     'sheet-button';
 
+
   button.title =
     'Settings';
+
 
   button.textContent =
     '⚙ Settings';
 
-  /*
-   * IMPORTANT:
-   * Real event listener.
-   * No inline onclick.
-   */
 
   button.addEventListener(
     'click',
-    function (event) {
+    function(event) {
 
       event.preventDefault();
+
       event.stopPropagation();
 
       openSettings();
@@ -5625,9 +5943,6 @@ function addSettingsButton() {
     }
   );
 
-  /*
-   * Put Settings before Sheet.
-   */
 
   sheetButton
     .parentNode
@@ -5640,7 +5955,7 @@ function addSettingsButton() {
 
 
 /*************************************************
- * SETTINGS MAIN SCREEN
+ * SETTINGS
  *************************************************/
 
 function openSettings() {
@@ -5648,7 +5963,7 @@ function openSettings() {
   google.script.run
 
     .withSuccessHandler(
-      function (options) {
+      function(options) {
 
         showSettingsScreen(
           options || {}
@@ -5658,10 +5973,12 @@ function openSettings() {
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -5685,6 +6002,7 @@ function showSettingsScreen(
       'settingsModal'
     );
 
+
   if (!modal) {
 
     modal =
@@ -5692,8 +6010,10 @@ function showSettingsScreen(
         'div'
       );
 
+
     modal.id =
       'settingsModal';
+
 
     document.body.appendChild(
       modal
@@ -5701,95 +6021,174 @@ function showSettingsScreen(
 
   }
 
+
   const names =
-    Object.keys(options || {});
+    Object.keys(
+      options || {}
+    );
+
 
   let html = '';
+
 
   html +=
 
     '<div style="' +
+
       'position:fixed;' +
+
       'inset:0;' +
+
       'background:rgba(0,0,0,.35);' +
+
       'z-index:99999;' +
+
       'display:flex;' +
+
       'align-items:center;' +
+
       'justify-content:center;' +
+
     '">' +
 
+
       '<div style="' +
+
         'width:420px;' +
+
         'max-width:90vw;' +
+
         'max-height:80vh;' +
+
         'background:white;' +
+
         'border-radius:12px;' +
+
         'box-shadow:0 10px 40px rgba(0,0,0,.25);' +
+
         'overflow:hidden;' +
+
         'font-family:Arial,sans-serif;' +
+
       '">' +
 
+
         '<div style="' +
+
           'padding:18px 20px;' +
+
           'border-bottom:1px solid #ddd;' +
+
           'display:flex;' +
+
           'justify-content:space-between;' +
+
           'align-items:center;' +
+
         '">' +
 
+
           '<strong style="font-size:18px;">' +
+
             'Settings' +
+
           '</strong>' +
 
-          '<button id="settingsCloseButton" ' +
+
+          '<button ' +
+
+            'id="settingsCloseButton" ' +
+
             'type="button" ' +
+
             'style="' +
+
               'border:0;' +
+
               'background:none;' +
+
               'font-size:24px;' +
+
               'cursor:pointer;' +
+
             '">' +
+
             '×' +
+
           '</button>' +
+
 
         '</div>' +
 
+
         '<div id="settingsCategoryList" ' +
+
           'style="' +
+
             'padding:14px;' +
+
             'overflow-y:auto;' +
+
             'max-height:65vh;' +
+
           '">' +
 
+
           names.map(
-            function (name) {
+            function(name) {
 
               return (
 
                 '<button ' +
+
                   'type="button" ' +
+
                   'class="settings-category-button" ' +
+
                   'data-setting-name="' +
-                    escapeAttribute(name) +
+
+                    escapeAttribute(
+                      name
+                    ) +
+
                   '" ' +
+
                   'style="' +
+
                     'display:block;' +
+
                     'width:100%;' +
+
                     'padding:13px 14px;' +
+
                     'margin-bottom:8px;' +
+
                     'text-align:left;' +
+
                     'border:1px solid #ddd;' +
+
                     'border-radius:8px;' +
+
                     'background:#fff;' +
+
                     'cursor:pointer;' +
+
                     'font-size:14px;' +
+
                   '">' +
 
-                  escapeHtml(name) +
+
+                  escapeHtml(
+                    name
+                  ) +
+
 
                   '<span style="float:right;">' +
+
                     '›' +
+
                   '</span>' +
+
 
                 '</button>'
 
@@ -5798,21 +6197,23 @@ function showSettingsScreen(
             }
           ).join('') +
 
+
         '</div>' +
+
 
       '</div>' +
 
+
     '</div>';
+
 
   modal.innerHTML =
     html;
 
+
   modal.style.display =
     'block';
 
-  /*
-   * Close
-   */
 
   document
     .getElementById(
@@ -5823,25 +6224,23 @@ function showSettingsScreen(
       closeSettings
     );
 
-  /*
-   * Category buttons
-   */
 
   modal
     .querySelectorAll(
       '.settings-category-button'
     )
     .forEach(
-      function (button) {
+      function(button) {
 
         button.addEventListener(
           'click',
-          function () {
+          function() {
 
             const name =
               button.getAttribute(
                 'data-setting-name'
               );
+
 
             openSettingList(
               name
@@ -5867,6 +6266,7 @@ function closeSettings() {
       'settingsModal'
     );
 
+
   if (modal) {
 
     modal.style.display =
@@ -5878,7 +6278,7 @@ function closeSettings() {
 
 
 /*************************************************
- * SETTING LIST SCREEN
+ * SETTING LIST
  *************************************************/
 
 function openSettingList(
@@ -5888,7 +6288,7 @@ function openSettingList(
   google.script.run
 
     .withSuccessHandler(
-      function (list) {
+      function(list) {
 
         showSettingList(
           settingName,
@@ -5899,10 +6299,12 @@ function openSettingList(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -5929,121 +6331,206 @@ function showSettingList(
       'settingsModal'
     );
 
+
   if (!modal) {
+
     return;
+
   }
 
+
   let html = '';
+
 
   html +=
 
     '<div style="' +
+
       'position:fixed;' +
+
       'inset:0;' +
+
       'background:rgba(0,0,0,.35);' +
+
       'z-index:99999;' +
+
       'display:flex;' +
+
       'align-items:center;' +
+
       'justify-content:center;' +
+
     '">' +
 
+
       '<div style="' +
+
         'width:500px;' +
+
         'max-width:92vw;' +
+
         'max-height:80vh;' +
+
         'background:white;' +
+
         'border-radius:12px;' +
+
         'box-shadow:0 10px 40px rgba(0,0,0,.25);' +
+
         'overflow:hidden;' +
+
         'font-family:Arial,sans-serif;' +
+
         'display:flex;' +
+
         'flex-direction:column;' +
+
       '">' +
 
+
         '<div style="' +
+
           'padding:16px 20px;' +
+
           'border-bottom:1px solid #ddd;' +
+
           'display:flex;' +
+
           'align-items:center;' +
+
           'gap:10px;' +
+
         '">' +
 
+
           '<button id="settingBackButton" ' +
+
             'type="button" ' +
+
             'style="' +
+
               'border:0;' +
+
               'background:#f1f3f4;' +
+
               'border-radius:6px;' +
+
               'font-size:20px;' +
+
               'width:36px;' +
+
               'height:36px;' +
+
               'cursor:pointer;' +
+
             '">' +
+
             '←' +
+
           '</button>' +
+
 
           '<strong style="font-size:18px;flex:1;">' +
-            escapeHtml(settingName) +
+
+            escapeHtml(
+              settingName
+            ) +
+
           '</strong>' +
 
+
           '<button id="settingCloseButton" ' +
+
             'type="button" ' +
+
             'style="' +
+
               'border:0;' +
+
               'background:none;' +
+
               'font-size:24px;' +
+
               'cursor:pointer;' +
+
             '">' +
+
             '×' +
+
           '</button>' +
+
 
         '</div>' +
 
+
         '<div style="' +
+
           'padding:14px 20px;' +
+
           'border-bottom:1px solid #eee;' +
+
         '">' +
 
+
           '<button id="settingAddButton" ' +
+
             'type="button" ' +
+
             'style="' +
+
               'background:#198754;' +
+
               'color:white;' +
+
               'border:0;' +
+
               'border-radius:6px;' +
+
               'padding:9px 14px;' +
+
               'cursor:pointer;' +
+
               'font-weight:600;' +
+
             '">' +
 
             '+ Add New' +
 
           '</button>' +
 
+
         '</div>' +
+
 
         '<div id="settingValuesList" ' +
+
           'style="' +
+
             'overflow-y:auto;' +
+
             'padding:10px 20px 20px;' +
+
             'flex:1;' +
+
           '">' +
 
+
         '</div>' +
+
 
       '</div>' +
 
+
     '</div>';
+
 
   modal.innerHTML =
     html;
 
+
   modal.style.display =
     'block';
 
-  /*
-   * Close
-   */
 
   document
     .getElementById(
@@ -6054,9 +6541,6 @@ function showSettingList(
       closeSettings
     );
 
-  /*
-   * Back
-   */
 
   document
     .getElementById(
@@ -6064,16 +6548,9 @@ function showSettingList(
     )
     .addEventListener(
       'click',
-      function () {
-
-        openSettings();
-
-      }
+      openSettings
     );
 
-  /*
-   * Add
-   */
 
   document
     .getElementById(
@@ -6081,7 +6558,7 @@ function showSettingList(
     )
     .addEventListener(
       'click',
-      function () {
+      function() {
 
         addSettingItem(
           settingName
@@ -6089,6 +6566,7 @@ function showSettingList(
 
       }
     );
+
 
   renderSettingValues(
     settingName,
@@ -6114,7 +6592,9 @@ function renderSettingValues(
 
 
   if (!container) {
+
     return;
+
   }
 
 
@@ -6123,25 +6603,31 @@ function renderSettingValues(
     container.innerHTML =
 
       '<div style="' +
+
         'padding:30px 10px;' +
+
         'text-align:center;' +
+
         'color:#777;' +
+
       '">' +
 
         'No values available.' +
 
       '</div>';
 
+
     return;
 
   }
 
 
-  container.innerHTML = '';
+  container.innerHTML =
+    '';
 
 
   list.forEach(
-    function (value) {
+    function(value) {
 
       const row =
         document.createElement(
@@ -6196,7 +6682,7 @@ function renderSettingValues(
 
       edit.addEventListener(
         'click',
-        function () {
+        function() {
 
           editSettingItem(
             settingName,
@@ -6232,7 +6718,7 @@ function renderSettingValues(
 
       remove.addEventListener(
         'click',
-        function () {
+        function() {
 
           deleteSettingItem(
             settingName,
@@ -6267,8 +6753,9 @@ function renderSettingValues(
 
 }
 
+
 /*************************************************
- * ADD SETTING ITEM
+ * ADD SETTING
  *************************************************/
 
 function addSettingItem(
@@ -6282,12 +6769,17 @@ function addSettingItem(
       ':'
     );
 
+
   if (value === null) {
+
     return;
+
   }
+
 
   const cleanValue =
     value.trim();
+
 
   if (!cleanValue) {
 
@@ -6299,13 +6791,15 @@ function addSettingItem(
 
   }
 
+
   google.script.run
 
     .withSuccessHandler(
-      function () {
+      function() {
 
         settingsOptions =
           null;
+
 
         openSettingList(
           settingName
@@ -6315,10 +6809,12 @@ function addSettingItem(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -6333,7 +6829,7 @@ function addSettingItem(
 
 
 /*************************************************
- * EDIT SETTING ITEM
+ * EDIT SETTING
  *************************************************/
 
 function editSettingItem(
@@ -6349,12 +6845,17 @@ function editSettingItem(
       oldValue
     );
 
+
   if (newValue === null) {
+
     return;
+
   }
+
 
   const cleanValue =
     newValue.trim();
+
 
   if (!cleanValue) {
 
@@ -6366,20 +6867,25 @@ function editSettingItem(
 
   }
 
+
   if (
     cleanValue ===
     oldValue
   ) {
+
     return;
+
   }
+
 
   google.script.run
 
     .withSuccessHandler(
-      function () {
+      function() {
 
         settingsOptions =
           null;
+
 
         openSettingList(
           settingName
@@ -6389,10 +6895,12 @@ function editSettingItem(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -6408,7 +6916,7 @@ function editSettingItem(
 
 
 /*************************************************
- * DELETE SETTING ITEM
+ * DELETE SETTING
  *************************************************/
 
 function deleteSettingItem(
@@ -6425,17 +6933,22 @@ function deleteSettingItem(
       '?'
     );
 
+
   if (!confirmed) {
+
     return;
+
   }
+
 
   google.script.run
 
     .withSuccessHandler(
-      function () {
+      function() {
 
         settingsOptions =
           null;
+
 
         openSettingList(
           settingName
@@ -6445,10 +6958,12 @@ function deleteSettingItem(
     )
 
     .withFailureHandler(
-      function (error) {
+      function(error) {
 
         alert(
-          getErrorMessage(error)
+          getErrorMessage(
+            error
+          )
         );
 
       }
@@ -6461,8 +6976,9 @@ function deleteSettingItem(
 
 }
 
+
 /*************************************************
- * LOAD TOTAL CUSTOMER COUNT
+ * TOTAL CUSTOMER COUNT
  *************************************************/
 
 function loadTotalCustomerCount() {
@@ -6477,9 +6993,13 @@ function loadTotalCustomerCount() {
             'totalCustomerCount'
           );
 
+
         if (!element) {
+
           return;
+
         }
+
 
         element.textContent =
           count +
@@ -6503,67 +7023,105 @@ function loadTotalCustomerCount() {
 
 }
 
+
 /*************************************************
- * OPEN ALL CUSTOMERS
+ * ALL CUSTOMERS
  *************************************************/
 
 function openAllCustomers() {
 
-  customerListMode = 'all';
+  customerListMode =
+    'all';
+
 
   const panel =
     document.getElementById(
       'allCustomersView'
     );
 
+
   const loading =
     document.getElementById(
       'allCustomerLoading'
     );
+
 
   const list =
     document.getElementById(
       'allCustomerList'
     );
 
+
   const count =
     document.getElementById(
       'allCustomerCount'
     );
 
+
   if (!panel || !list) {
+
     return;
+
   }
 
-  document
-    .getElementById('customerView')
-    .classList.add('hidden');
 
   document
-    .getElementById('detailView')
-    .classList.add('hidden');
+    .getElementById(
+      'customerView'
+    )
+    .classList.add(
+      'hidden'
+    );
 
-  panel.classList.remove('hidden');
+
+  document
+    .getElementById(
+      'detailView'
+    )
+    .classList.add(
+      'hidden'
+    );
+
+
+  panel.classList.remove(
+    'hidden'
+  );
+
 
   if (loading) {
-    loading.classList.remove('hidden');
+
+    loading.classList.remove(
+      'hidden'
+    );
+
   }
 
-  list.innerHTML = '';
+
+  list.innerHTML =
+    '';
+
 
   if (count) {
+
     count.textContent =
       'Loading...';
+
   }
+
 
   const search =
     document.getElementById(
       'allCustomerSearch'
     );
 
+
   if (search) {
-    search.value = '';
+
+    search.value =
+      '';
+
   }
+
 
   google.script.run
 
@@ -6573,17 +7131,24 @@ function openAllCustomers() {
         allCustomers =
           data || [];
 
+
         if (loading) {
+
           loading.classList.add(
             'hidden'
           );
+
         }
 
+
         if (count) {
+
           count.textContent =
             allCustomers.length +
             ' Customers';
+
         }
+
 
         renderAllCustomers();
 
@@ -6594,24 +7159,33 @@ function openAllCustomers() {
       function(error) {
 
         if (loading) {
+
           loading.classList.add(
             'hidden'
           );
+
         }
 
+
         list.innerHTML =
+
           '<div class="loading">' +
-          escapeHtml(
-            getErrorMessage(error)
-          ) +
+
+            escapeHtml(
+              getErrorMessage(
+                error
+              )
+            ) +
+
           '</div>';
 
       }
     )
 
-    .getCustomersByHub('');
+    .getAllCustomers();
 
 }
+
 
 /*************************************************
  * RENDER ALL CUSTOMERS
@@ -6624,45 +7198,68 @@ function renderAllCustomers() {
       'allCustomerList'
     );
 
+
   if (!list) {
+
     return;
+
   }
+
 
   const searchInput =
     document.getElementById(
       'allCustomerSearch'
     );
 
+
   const query =
     searchInput
+
       ? searchInput.value
           .trim()
           .toLowerCase()
+
       : '';
 
-  list.innerHTML = '';
+
+  list.innerHTML =
+    '';
+
 
   const filtered =
     allCustomers.filter(
       function(customer) {
 
         if (!query) {
+
           return true;
+
         }
+
 
         const text =
           [
+
             customer.companyId,
+
             customer.customerName,
+
             customer.industrialArea,
-            customer.industrialHub,
+
             customer.city,
+
             customer.type,
+
             customer.status,
-            customer.potential
+
+            customer.potential,
+
+            customer.website
+
           ]
-            .join(' ')
-            .toLowerCase();
+          .join(' ')
+          .toLowerCase();
+
 
         return text.indexOf(
           query
@@ -6671,15 +7268,22 @@ function renderAllCustomers() {
       }
     );
 
+
   if (!filtered.length) {
 
     list.innerHTML =
+
       '<div class="loading">' +
-      'No customers found.' +
+
+        'No customers found.' +
+
       '</div>';
 
+
     return;
+
   }
+
 
   filtered.forEach(
     function(customer) {
@@ -6689,66 +7293,126 @@ function renderAllCustomers() {
           'div'
         );
 
+
       item.className =
         'customer-item';
+
 
       item.innerHTML =
 
         '<div class="customer-name">' +
+
           escapeHtml(
-            customer.customerName || '-'
+            customer.customerName ||
+            '-'
           ) +
+
         '</div>' +
+
 
         '<div class="customer-area">' +
+
           'Industrial Area: ' +
+
           escapeHtml(
-            customer.industrialArea || '-'
+            customer.industrialArea ||
+            '-'
           ) +
+
         '</div>' +
 
+
         '<div class="customer-city">' +
+
           escapeHtml(
-            customer.city || ''
+            customer.city ||
+            ''
           ) +
+
         '</div>';
+
 
       item.addEventListener(
         'click',
         function() {
 
-          activeCustomer =
-            customer;
-
-          showAllCustomerDetail();
+          openAllCustomerDetail(
+            customer
+          );
 
         }
       );
 
-      list.appendChild(item);
+
+      list.appendChild(
+        item
+      );
 
     }
   );
 
 }
 
+
 /*************************************************
- * SHOW ALL CUSTOMER DETAIL
+ * ALL CUSTOMER DETAIL
  *************************************************/
 
-function showAllCustomerDetail() {
+function openAllCustomerDetail(
+  customer
+) {
+
+  activeCustomer =
+    customer;
+
+
+  activeArea =
+    areas.find(
+      function(area) {
+
+        return String(
+          area.industrialArea ||
+          ''
+        )
+        .trim()
+        .toLowerCase() ===
+
+        String(
+          customer.industrialArea ||
+          ''
+        )
+        .trim()
+        .toLowerCase();
+
+      }
+    ) || null;
+
+
+  if (activeArea) {
+
+    activeAreaIndex =
+      areas.indexOf(
+        activeArea
+      );
+
+  }
+
 
   document
     .getElementById(
       'allCustomersView'
     )
-    .classList.add('hidden');
+    .classList.add(
+      'hidden'
+    );
+
 
   renderCustomerDetail();
 
   showDetailView();
 
 }
+
 
 /*************************************************
  * ALL CUSTOMER SEARCH
@@ -6761,14 +7425,19 @@ function setupAllCustomerSearch() {
       'allCustomerSearch'
     );
 
+
   const clear =
     document.getElementById(
       'allCustomerSearchClear'
     );
 
+
   if (!input) {
+
     return;
+
   }
+
 
   input.addEventListener(
     'input',
@@ -6776,6 +7445,7 @@ function setupAllCustomerSearch() {
 
       const query =
         input.value.trim();
+
 
       if (clear) {
 
@@ -6786,10 +7456,12 @@ function setupAllCustomerSearch() {
 
       }
 
+
       renderAllCustomers();
 
     }
   );
+
 
   if (clear) {
 
@@ -6797,11 +7469,14 @@ function setupAllCustomerSearch() {
       'click',
       function() {
 
-        input.value = '';
+        input.value =
+          '';
+
 
         clear.classList.add(
           'hidden'
         );
+
 
         renderAllCustomers();
 

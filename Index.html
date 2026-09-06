@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html>
 
 <head>
@@ -21,90 +20,104 @@
 <body>
 
 
-<!-- TOP HEADER -->
+<!-- =========================================
+     TOP HEADER
+========================================= -->
 
 <header class="app-header">
 
   <div
-  class="brand home-button"
-  id="homeButton"
-  title="Home"
->
-
-  <div class="brand-icon">
-    C
-  </div>
-
-  <div>
-
-    <div class="brand-title">
-      Customers Hub
-    </div>
-
-    <div class="brand-subtitle">
-      Industrial Hubs
-    </div>
-
-  </div>
-
-</div>
-
-<!-- UNIVERSAL SEARCH -->
-
-<div class="universal-search">
-
-  <span class="universal-search-icon">
-    🔍
-  </span>
-
-  <input
-    id="universalSearch"
-    type="text"
-    placeholder="Search customers, hubs or contacts..."
-    autocomplete="off"
+    class="brand home-button"
+    id="homeButton"
+    title="Home"
   >
 
-  <button
-    id="universalSearchClear"
-    type="button"
-    class="universal-search-clear hidden"
-    title="Clear search"
-  >
-    ×
-  </button>
+    <div class="brand-icon">
+      C
+    </div>
 
-  <div
-    id="universalSearchResults"
-    class="universal-search-results hidden"
-  ></div>
+    <div>
 
-</div>
+      <div class="brand-title">
+        Customers Hub
+      </div>
+
+      <div class="brand-subtitle">
+        Industrial Areas
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =======================================
+       UNIVERSAL SEARCH
+  ======================================== -->
+
+  <div class="universal-search">
+
+    <span class="universal-search-icon">
+      🔍
+    </span>
+
+    <input
+      id="universalSearch"
+      type="text"
+      placeholder="Search customers, areas or contacts..."
+      autocomplete="off"
+    >
+
+    <button
+      id="universalSearchClear"
+      type="button"
+      class="universal-search-clear hidden"
+      title="Clear search"
+    >
+      ×
+    </button>
+
+    <div
+      id="universalSearchResults"
+      class="universal-search-results hidden"
+    ></div>
+
+  </div>
+
+
+  <!-- =======================================
+       HEADER ACTIONS
+  ======================================== -->
 
   <div class="header-actions">
 
-  <button
-    id="openSheetButton"
-    class="sheet-button"
-    type="button"
-  >
-    Sheet
-  </button>
+    <button
+      id="openSheetButton"
+      class="sheet-button"
+      type="button"
+    >
+      Sheet
+    </button>
 
-  <!-- HUB COUNT -->
-  <div class="hub-count">
-    <span id="hubCount">
-      0
-    </span>
-    Industrial Hubs
+    <div class="area-count">
+
+      <span id="areaCount">
+        0
+      </span>
+
+      Industrial Areas
+
+    </div>
+
   </div>
-
-</div>
 
 </header>
 
 
 
-<!-- FULL MAP -->
+<!-- =========================================
+     FULL MAP
+========================================= -->
 
 <main class="map-container">
 
@@ -120,7 +133,7 @@
     id="loading"
     class="loading-overlay"
   >
-    Loading Industrial Hubs...
+    Loading Industrial Areas...
   </div>
 
 
@@ -132,7 +145,10 @@
   ></div>
 
 
-  <!-- CUSTOMER PANEL -->
+
+  <!-- =======================================
+       CUSTOMER PANEL
+  ======================================== -->
 
   <aside
     id="customerView"
@@ -142,7 +158,7 @@
     <div class="panel-header">
 
       <button
-        id="backToHubs"
+        id="backToAreas"
         class="back-button"
         type="button"
       >
@@ -150,19 +166,17 @@
       </button>
 
 
-      <div class="selected-hub-heading">
+      <div class="selected-area-heading">
 
         <div
-          id="selectedHubName"
+          id="selectedAreaName"
           class="panel-title"
-        >
-        </div>
+        ></div>
 
         <div
-          id="selectedHubCity"
+          id="selectedAreaCity"
           class="panel-subtitle"
-        >
-        </div>
+        ></div>
 
       </div>
 
@@ -186,7 +200,9 @@
 
 
 
-  <!-- CUSTOMER DETAILS -->
+  <!-- =======================================
+       CUSTOMER DETAILS
+  ======================================== -->
 
   <aside
     id="detailView"
@@ -217,75 +233,83 @@
 
   </aside>
 
-  <!-- ALL CUSTOMERS PANEL -->
 
-<aside
-  id="allCustomersView"
-  class="floating-panel hidden"
->
 
-  <div class="panel-header">
+  <!-- =======================================
+       ALL CUSTOMERS
+  ======================================== -->
 
-    <button
-      id="backFromAllCustomers"
-      class="back-button"
-      type="button"
-    >
-      ←
-    </button>
+  <aside
+    id="allCustomersView"
+    class="floating-panel hidden"
+  >
 
-    <div class="selected-hub-heading">
+    <div class="panel-header">
 
-      <div class="panel-title">
-        All Customers
-      </div>
-
-      <div
-        id="allCustomerCount"
-        class="panel-subtitle"
+      <button
+        id="backFromAllCustomers"
+        class="back-button"
+        type="button"
       >
-        Loading...
+        ←
+      </button>
+
+
+      <div class="selected-area-heading">
+
+        <div class="panel-title">
+          All Customers
+        </div>
+
+        <div
+          id="allCustomerCount"
+          class="panel-subtitle"
+        >
+          Loading...
+        </div>
+
       </div>
 
     </div>
 
-  </div>
 
-  <!-- CUSTOMER SEARCH -->
+    <!-- CUSTOMER SEARCH -->
 
-  <div class="all-customer-search">
+    <div class="all-customer-search">
 
-    <input
-      id="allCustomerSearch"
-      type="text"
-      placeholder="Search customers..."
-      autocomplete="off"
+      <input
+        id="allCustomerSearch"
+        type="text"
+        placeholder="Search customers..."
+        autocomplete="off"
+      >
+
+      <button
+        id="allCustomerSearchClear"
+        type="button"
+        class="hidden"
+        title="Clear"
+      >
+        ×
+      </button>
+
+    </div>
+
+
+    <div
+      id="allCustomerLoading"
+      class="loading"
     >
+      Loading Customers...
+    </div>
 
-    <button
-      id="allCustomerSearchClear"
-      type="button"
-      class="hidden"
-    >
-      ×
-    </button>
 
-  </div>
+    <div
+      id="allCustomerList"
+      class="customer-list"
+    ></div>
 
-  <div
-    id="allCustomerLoading"
-    class="loading"
-  >
-    Loading Customers...
-  </div>
-
-  <div
-    id="allCustomerList"
-    class="customer-list"
-  >
-  </div>
-
-</aside>
+  </aside>
 
 </main>
 

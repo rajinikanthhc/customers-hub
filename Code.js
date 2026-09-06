@@ -1,12 +1,22 @@
 /*************************************************
  * CUSTOMERS HUB
- * Sales Territory / Customer Mapping
+ * INDUSTRIAL AREA / CUSTOMER MANAGEMENT
+ *
+ * DATA RELATIONSHIP
+ *
+ * Industrial Area
+ *       ↓
+ * Customers
+ *       ↓
+ * People
  *************************************************/
+
 
 const AREAS_SHEET = 'Areas';
 const CUSTOMERS_SHEET = 'Customers';
 const PEOPLE_SHEET = 'People';
 const API_KEY_SHEET = 'API Key';
+const SETTINGS_SHEET = 'Settings';
 
 
 /*************************************************
@@ -66,8 +76,11 @@ function getMapApiKey() {
 
   let sheet = null;
 
-
-  for (let i = 0; i < sheets.length; i++) {
+  for (
+    let i = 0;
+    i < sheets.length;
+    i++
+  ) {
 
     const name =
       sheets[i]
@@ -75,9 +88,13 @@ function getMapApiKey() {
         .trim()
         .toLowerCase();
 
-    if (name === 'api key') {
+    if (
+      name ===
+      API_KEY_SHEET.toLowerCase()
+    ) {
 
-      sheet = sheets[i];
+      sheet =
+        sheets[i];
 
       break;
 
@@ -85,35 +102,40 @@ function getMapApiKey() {
 
   }
 
-
   if (!sheet) {
-
-    const availableSheets =
-      sheets
-        .map(s => s.getName())
-        .join(', ');
 
     throw new Error(
       'API Key sheet not found. Available sheets: ' +
-      availableSheets
+      sheets
+        .map(function(s) {
+          return s.getName();
+        })
+        .join(', ')
     );
 
   }
-
 
   const values =
     sheet
       .getDataRange()
       .getDisplayValues();
 
+  for (
+    let r = 0;
+    r < values.length;
+    r++
+  ) {
 
-  for (let r = 0; r < values.length; r++) {
-
-    for (let c = 0; c < values[r].length; c++) {
+    for (
+      let c = 0;
+      c < values[r].length;
+      c++
+    ) {
 
       const value =
-        String(values[r][c] || '').trim();
-
+        String(
+          values[r][c] || ''
+        ).trim();
 
       if (
         value.startsWith('AIza') &&
@@ -128,7 +150,6 @@ function getMapApiKey() {
 
   }
 
-
   throw new Error(
     'Google Maps API key was not found in the API Key sheet.'
   );
@@ -137,17 +158,26 @@ function getMapApiKey() {
 
 
 /*************************************************
- * GET INDUSTRIAL HUBS
+ * INDUSTRIAL AREAS
+ *
+ * Areas sheet:
+ *
+ * Industrial Area
+ * City
+ * Latitude
+ * Longitude
  *************************************************/
 
-function getIndustrialHubs() {
+function getIndustrialAreas() {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName(AREAS_SHEET);
-
+    ss.getSheetByName(
+      AREAS_SHEET
+    );
 
   if (!sheet) {
 
@@ -157,42 +187,42 @@ function getIndustrialHubs() {
 
   }
 
-
-  const data =
+  const values =
     sheet
       .getDataRange()
       .getDisplayValues();
 
-
-  if (data.length < 2) {
+  if (
+    values.length < 2
+  ) {
 
     return [];
 
   }
 
-
   const headers =
-    data[0].map(normalizeHeader);
+    values[0].map(
+      normalizeHeader
+    );
 
-
-  const hubIndex =
+  const areaColumn =
     findHeader(
       headers,
       [
-        'industrial hub',
-        'industrialhub'
+        'industrial area',
+        'area'
       ]
     );
 
-
-  const cityIndex =
+  const cityColumn =
     findHeader(
       headers,
-      ['city']
+      [
+        'city'
+      ]
     );
 
-
-  const latitudeIndex =
+  const latitudeColumn =
     findHeader(
       headers,
       [
@@ -201,8 +231,7 @@ function getIndustrialHubs() {
       ]
     );
 
-
-  const longitudeIndex =
+  const longitudeColumn =
     findHeader(
       headers,
       [
@@ -212,128 +241,121 @@ function getIndustrialHubs() {
       ]
     );
 
-    const industrialAreaIndex =
-  findHeader(
-    headers,
-    [
-      'industrial area',
-      'industrialarea'
-    ]
-  );
-
   if (
-  hubIndex === -1 ||
-  cityIndex === -1 ||
-  latitudeIndex === -1 ||
-  longitudeIndex === -1
-) {
+    areaColumn === -1 ||
+    cityColumn === -1 ||
+    latitudeColumn === -1 ||
+    longitudeColumn === -1
+  ) {
 
     throw new Error(
-      'Areas sheet must contain Industrial Hub, City, Latitude and Longitude columns.'
+      'Areas sheet must contain Industrial Area, City, Latitude and Longitude columns.'
     );
 
   }
 
+  const areas = [];
 
-  const hubs = {};
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
 
+    const row =
+      values[i];
 
-  for (let i = 1; i < data.length; i++) {
+    const industrialArea =
+      getCell(
+        row,
+        areaColumn
+      );
 
-    const row = data[i];
-
-
-    const hub =
-      String(
-        row[hubIndex] || ''
-      ).trim();
-
+    if (!industrialArea) {
+      continue;
+    }
 
     const city =
-      String(
-        row[cityIndex] || ''
-      ).trim();
-
+      getCell(
+        row,
+        cityColumn
+      );
 
     const latitude =
-      parseFloat(
-        row[latitudeIndex]
+      Number(
+        row[latitudeColumn]
       );
-
 
     const longitude =
-      parseFloat(
-        row[longitudeIndex]
+      Number(
+        row[longitudeColumn]
       );
 
-
-    if (!hub) {
-      continue;
-    }
-
-
     if (
-      isNaN(latitude) ||
-      isNaN(longitude)
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
     ) {
+
       continue;
+
     }
 
+    areas.push({
 
-    const key =
-      hub.toLowerCase();
+      industrialArea:
+        industrialArea,
 
+      city:
+        city,
 
-    if (!hubs[key]) {
+      latitude:
+        latitude,
 
-  hubs[key] = {
+      longitude:
+        longitude,
 
-    hub: hub,
+      rowNumber:
+        i + 1
 
-    industrialArea:
-      industrialAreaIndex !== -1
-        ? String(
-            row[industrialAreaIndex] || ''
-          ).trim()
-        : '',
-
-    city: city,
-
-    latitude: latitude,
-
-    longitude: longitude,
-
-    rowNumber: i + 1
-
-  };
-
-}
+    });
 
   }
 
+  areas.sort(
+    function(a, b) {
 
-  return Object
-    .values(hubs)
-    .sort(
-      (a, b) =>
-        a.hub.localeCompare(b.hub)
-    );
+      return String(
+        a.industrialArea
+      ).localeCompare(
+        String(
+          b.industrialArea
+        )
+      );
+
+    }
+  );
+
+  return areas;
 
 }
 
 
 /*************************************************
- * GET CUSTOMERS BY INDUSTRIAL HUB
+ * GET CUSTOMERS BY INDUSTRIAL AREA
  *************************************************/
 
-function getCustomersByHub(hubName) {
+function getCustomersByArea(
+  industrialArea
+) {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName(CUSTOMERS_SHEET);
-
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
 
   if (!sheet) {
 
@@ -343,23 +365,23 @@ function getCustomersByHub(hubName) {
 
   }
 
-
-  const data =
+  const values =
     sheet
       .getDataRange()
       .getDisplayValues();
 
-
-  if (data.length < 2) {
+  if (
+    values.length < 2
+  ) {
 
     return [];
 
   }
 
-
   const headers =
-    data[0].map(normalizeHeader);
-
+    values[0].map(
+      normalizeHeader
+    );
 
   const indexes = {
 
@@ -386,103 +408,104 @@ function getCustomersByHub(hubName) {
         headers,
         [
           'industrial area',
-          'industrialarea'
-        ]
-      ),
-
-    industrialHub:
-      findHeader(
-        headers,
-        [
-          'industrial hub',
-          'industrialhub'
+          'area'
         ]
       ),
 
     city:
       findHeader(
         headers,
-        ['city']
+        [
+          'city'
+        ]
       ),
 
     type:
       findHeader(
         headers,
-        ['type']
+        [
+          'type'
+        ]
       ),
 
     status:
       findHeader(
         headers,
-        ['status']
+        [
+          'status'
+        ]
       ),
 
     potential:
       findHeader(
         headers,
-        ['potential']
+        [
+          'potential'
+        ]
       ),
 
     website:
       findHeader(
         headers,
-        ['website']
+        [
+          'website'
+        ]
       ),
 
     notes:
       findHeader(
         headers,
-        ['notes']
+        [
+          'notes'
+        ]
       )
 
   };
 
-
   if (
     indexes.companyId === -1 ||
     indexes.customerName === -1 ||
-    indexes.industrialHub === -1
+    indexes.industrialArea === -1
   ) {
 
     throw new Error(
-      'Customers sheet is missing required columns.'
+      'Customers sheet must contain Company ID, Customer Name and Industrial Area columns.'
     );
 
   }
 
-
-  const wantedHub =
+  const wantedArea =
     String(
-      hubName || ''
+      industrialArea || ''
     )
       .trim()
       .toLowerCase();
 
-
   const customers = [];
 
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
 
-  for (let i = 1; i < data.length; i++) {
+    const row =
+      values[i];
 
-    const row = data[i];
-
-
-    const rowHub =
-      String(
-        row[indexes.industrialHub] || ''
+    const rowArea =
+      getCell(
+        row,
+        indexes.industrialArea
       )
-        .trim()
-        .toLowerCase();
-
+      .toLowerCase();
 
     if (
-  wantedHub &&
-  rowHub !== wantedHub
-) {
+      rowArea !== wantedArea
+    ) {
 
-  continue;
+      continue;
 
-}
+    }
 
     customers.push({
 
@@ -502,12 +525,6 @@ function getCustomersByHub(hubName) {
         getCell(
           row,
           indexes.industrialArea
-        ),
-
-      industrialHub:
-        getCell(
-          row,
-          indexes.industrialHub
         ),
 
       city:
@@ -550,29 +567,356 @@ function getCustomersByHub(hubName) {
 
   }
 
-
   return customers.sort(
-    (a, b) =>
-      a.customerName.localeCompare(
-        b.customerName
-      )
+    function(a, b) {
+
+      return String(
+        a.customerName || ''
+      ).localeCompare(
+        String(
+          b.customerName || ''
+        )
+      );
+
+    }
   );
 
 }
 
 
 /*************************************************
- * GET PEOPLE BY COMPANY ID
+ * GET ALL CUSTOMERS
  *************************************************/
 
-function getPeopleByCompanyId(companyId) {
+function getAllCustomers() {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName(PEOPLE_SHEET);
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
 
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+  if (
+    values.length < 2
+  ) {
+
+    return [];
+
+  }
+
+  const headers =
+    values[0].map(
+      normalizeHeader
+    );
+
+  const indexes = {
+
+    companyId:
+      findHeader(
+        headers,
+        [
+          'company id'
+        ]
+      ),
+
+    customerName:
+      findHeader(
+        headers,
+        [
+          'customer name'
+        ]
+      ),
+
+    industrialArea:
+      findHeader(
+        headers,
+        [
+          'industrial area'
+        ]
+      ),
+
+    city:
+      findHeader(
+        headers,
+        [
+          'city'
+        ]
+      ),
+
+    type:
+      findHeader(
+        headers,
+        [
+          'type'
+        ]
+      ),
+
+    status:
+      findHeader(
+        headers,
+        [
+          'status'
+        ]
+      ),
+
+    potential:
+      findHeader(
+        headers,
+        [
+          'potential'
+        ]
+      ),
+
+    website:
+      findHeader(
+        headers,
+        [
+          'website'
+        ]
+      ),
+
+    notes:
+      findHeader(
+        headers,
+        [
+          'notes'
+        ]
+      )
+
+  };
+
+  const customers = [];
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const row =
+      values[i];
+
+    customers.push({
+
+      companyId:
+        getCell(
+          row,
+          indexes.companyId
+        ),
+
+      customerName:
+        getCell(
+          row,
+          indexes.customerName
+        ),
+
+      industrialArea:
+        getCell(
+          row,
+          indexes.industrialArea
+        ),
+
+      city:
+        getCell(
+          row,
+          indexes.city
+        ),
+
+      type:
+        getCell(
+          row,
+          indexes.type
+        ),
+
+      status:
+        getCell(
+          row,
+          indexes.status
+        ),
+
+      potential:
+        getCell(
+          row,
+          indexes.potential
+        ),
+
+      website:
+        getCell(
+          row,
+          indexes.website
+        ),
+
+      notes:
+        getCell(
+          row,
+          indexes.notes
+        )
+
+    });
+
+  }
+
+  return customers.sort(
+    function(a, b) {
+
+      return String(
+        a.customerName || ''
+      ).localeCompare(
+        String(
+          b.customerName || ''
+        )
+      );
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * GET CUSTOMER BY ID
+ *************************************************/
+
+function getCustomerById(
+  companyId
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  if (
+    values.length < 2
+  ) {
+
+    return null;
+
+  }
+
+  const headers =
+    values[0];
+
+  const idColumn =
+    headers.findIndex(
+      function(header) {
+
+        return normalizeHeader(
+          header
+        ) === 'company id';
+
+      }
+    );
+
+  if (
+    idColumn === -1
+  ) {
+
+    throw new Error(
+      'Company ID column not found.'
+    );
+
+  }
+
+  const wantedId =
+    String(
+      companyId || ''
+    )
+      .trim()
+      .toLowerCase();
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const rowId =
+      String(
+        values[i][idColumn] || ''
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      rowId === wantedId
+    ) {
+
+      const result = {};
+
+      headers.forEach(
+        function(header, index) {
+
+          result[
+            String(
+              header
+            ).trim()
+          ] =
+            values[i][index];
+
+        }
+      );
+
+      return result;
+
+    }
+
+  }
+
+  return null;
+
+}
+
+
+/*************************************************
+ * GET PEOPLE BY COMPANY
+ *************************************************/
+
+function getPeopleByCompanyId(
+  companyId
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      PEOPLE_SHEET
+    );
 
   if (!sheet) {
 
@@ -582,23 +926,23 @@ function getPeopleByCompanyId(companyId) {
 
   }
 
-
-  const data =
+  const values =
     sheet
       .getDataRange()
       .getDisplayValues();
 
-
-  if (data.length < 2) {
+  if (
+    values.length < 2
+  ) {
 
     return [];
 
   }
 
-
   const headers =
-    data[0].map(normalizeHeader);
-
+    values[0].map(
+      normalizeHeader
+    );
 
   const indexes = {
 
@@ -623,41 +967,52 @@ function getPeopleByCompanyId(companyId) {
     company:
       findHeader(
         headers,
-        ['company']
+        [
+          'company'
+        ]
       ),
 
     name:
       findHeader(
         headers,
-        ['name']
+        [
+          'name'
+        ]
       ),
 
     designation:
       findHeader(
         headers,
-        ['designation']
+        [
+          'designation'
+        ]
       ),
 
     phone:
       findHeader(
         headers,
-        ['phone']
+        [
+          'phone'
+        ]
       ),
 
     email:
       findHeader(
         headers,
-        ['email']
+        [
+          'email'
+        ]
       ),
 
     photo:
       findHeader(
         headers,
-        ['photo']
+        [
+          'photo'
+        ]
       )
 
   };
-
 
   if (
     indexes.companyId === -1 ||
@@ -670,7 +1025,6 @@ function getPeopleByCompanyId(companyId) {
 
   }
 
-
   const wantedId =
     String(
       companyId || ''
@@ -678,22 +1032,23 @@ function getPeopleByCompanyId(companyId) {
       .trim()
       .toLowerCase();
 
-
   const people = [];
 
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
 
-  for (let i = 1; i < data.length; i++) {
-
-    const row = data[i];
-
+    const row =
+      values[i];
 
     const rowCompanyId =
-      String(
-        row[indexes.companyId] || ''
+      getCell(
+        row,
+        indexes.companyId
       )
-        .trim()
-        .toLowerCase();
-
+      .toLowerCase();
 
     if (
       rowCompanyId !== wantedId
@@ -703,13 +1058,11 @@ function getPeopleByCompanyId(companyId) {
 
     }
 
-
-    const photoName =
+    const photo =
       getCell(
         row,
         indexes.photo
       );
-
 
     people.push({
 
@@ -756,129 +1109,257 @@ function getPeopleByCompanyId(companyId) {
         ),
 
       photo:
-        photoName,
+        photo,
 
       visitingCardUrl:
-  getGitHubImageUrl(
-    photoName
-  )
+        getGitHubImageUrl(
+          photo
+        )
 
     });
 
   }
 
+  /*
+   * PEOPLE A-Z
+   */
 
-  return people;
+  return people.sort(
+    function(a, b) {
 
-}
+      return String(
+        a.name || ''
+      ).localeCompare(
+        String(
+          b.name || ''
+        )
+      );
 
-/*************************************************
- * CELL VALUE
- *************************************************/
-
-function getCell(row, index) {
-
-  if (
-    index === -1 ||
-    index >= row.length
-  ) {
-
-    return '';
-
-  }
-
-
-  return String(
-    row[index] || ''
-  ).trim();
+    }
+  );
 
 }
 
 
 /*************************************************
- * NORMALIZE HEADER
+ * SAVE NEW CUSTOMER
  *************************************************/
 
-function normalizeHeader(value) {
+function saveNewCustomerRecord(
+  data
+) {
 
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, ' ');
+  const lock =
+    LockService
+      .getScriptLock();
 
-}
+  lock.waitLock(30000);
 
+  try {
 
-/*************************************************
- * FIND HEADER
- *************************************************/
+    const ss =
+      SpreadsheetApp
+        .getActiveSpreadsheet();
 
-function findHeader(headers, names) {
+    const sheet =
+      ss.getSheetByName(
+        CUSTOMERS_SHEET
+      );
 
-  for (
-    let i = 0;
-    i < headers.length;
-    i++
-  ) {
+    if (!sheet) {
 
-    if (
-      names.includes(
-        headers[i]
-      )
-    ) {
-
-      return i;
+      throw new Error(
+        'Customers sheet not found.'
+      );
 
     }
 
+    if (
+      !data ||
+      !String(
+        data.customerName || ''
+      ).trim()
+    ) {
+
+      throw new Error(
+        'Customer Name is required.'
+      );
+
+    }
+
+    const values =
+      sheet
+        .getDataRange()
+        .getValues();
+
+    if (!values.length) {
+
+      throw new Error(
+        'Customers sheet is empty.'
+      );
+
+    }
+
+    const headers =
+      values[0].map(
+        normalizeHeader
+      );
+
+    const idColumn =
+      headers.indexOf(
+        'company id'
+      );
+
+    if (
+      idColumn === -1
+    ) {
+
+      throw new Error(
+        'Company ID column not found.'
+      );
+
+    }
+
+    const companyId =
+      getNextAvailableCompanyId();
+
+    const newRow =
+      new Array(
+        headers.length
+      ).fill('');
+
+    setRowField(
+      newRow,
+      headers,
+      'company id',
+      companyId
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'customer name',
+      data.customerName
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'industrial area',
+      data.industrialArea
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'city',
+      data.city
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'type',
+      data.type
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'status',
+      data.status
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'potential',
+      data.potential
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'website',
+      data.website
+    );
+
+    setRowField(
+      newRow,
+      headers,
+      'notes',
+      data.notes
+    );
+
+    sheet.appendRow(
+      newRow
+    );
+
+    return companyId;
+
+  } finally {
+
+    lock.releaseLock();
+
   }
 
-
-  return -1;
-
 }
 
-function getSpreadsheetUrl() {
 
-  return SpreadsheetApp
-    .getActiveSpreadsheet()
-    .getUrl();
+/*************************************************
+ * UPDATE CUSTOMER
+ *************************************************/
 
-}
-
-function updateCustomerRecord(companyId, data) {
+function updateCustomerRecord(
+  companyId,
+  data
+) {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName('Customers');
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
 
   if (!sheet) {
+
     throw new Error(
       'Customers sheet not found.'
     );
+
   }
 
-
   const values =
-    sheet.getDataRange().getValues();
+    sheet
+      .getDataRange()
+      .getValues();
+
+  if (
+    values.length < 2
+  ) {
+
+    throw new Error(
+      'Customers sheet is empty.'
+    );
+
+  }
 
   const headers =
-    values[0].map(function(h) {
-
-      return String(h)
-        .trim()
-        .toLowerCase();
-
-    });
-
+    values[0].map(
+      normalizeHeader
+    );
 
   const idColumn =
-    headers.indexOf('company id');
+    headers.indexOf(
+      'company id'
+    );
 
-
-  if (idColumn === -1) {
+  if (
+    idColumn === -1
+  ) {
 
     throw new Error(
       'Company ID column not found.'
@@ -886,9 +1367,15 @@ function updateCustomerRecord(companyId, data) {
 
   }
 
+  const wantedId =
+    String(
+      companyId || ''
+    )
+      .trim()
+      .toLowerCase();
 
-  let row = -1;
-
+  let rowNumber =
+    -1;
 
   for (
     let i = 1;
@@ -896,14 +1383,19 @@ function updateCustomerRecord(companyId, data) {
     i++
   ) {
 
-    if (
+    const rowId =
       String(
-        values[i][idColumn]
-      ).trim() ===
-      String(companyId).trim()
+        values[i][idColumn] || ''
+      )
+      .trim()
+      .toLowerCase();
+
+    if (
+      rowId === wantedId
     ) {
 
-      row = i + 1;
+      rowNumber =
+        i + 1;
 
       break;
 
@@ -911,15 +1403,15 @@ function updateCustomerRecord(companyId, data) {
 
   }
 
-
-  if (row === -1) {
+  if (
+    rowNumber === -1
+  ) {
 
     throw new Error(
       'Customer not found.'
     );
 
   }
-
 
   const fields = {
 
@@ -928,9 +1420,6 @@ function updateCustomerRecord(companyId, data) {
 
     'industrial area':
       data.industrialArea,
-
-    'industrial hub':
-      data.industrialHub,
 
     'city':
       data.city,
@@ -952,61 +1441,102 @@ function updateCustomerRecord(companyId, data) {
 
   };
 
-
   Object.keys(fields)
-    .forEach(function(header) {
+    .forEach(
+      function(header) {
 
-      const column =
-        headers.indexOf(header);
+        const column =
+          headers.indexOf(
+            header
+          );
 
+        if (
+          column === -1
+        ) {
 
-      if (column !== -1) {
+          return;
+
+        }
 
         sheet
           .getRange(
-            row,
+            rowNumber,
             column + 1
           )
           .setValue(
-            fields[header]
+            fields[header] || ''
           );
 
       }
-
-    });
-
+    );
 
   return true;
 
 }
 
-function getCustomerById(companyId) {
+
+/*************************************************
+ * GET NEXT AVAILABLE COMPANY ID
+ *************************************************/
+
+function getNextAvailableCompanyId() {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName('Customers');
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
 
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
 
   const values =
-    sheet.getDataRange().getValues();
+    sheet
+      .getDataRange()
+      .getValues();
 
+  if (
+    !values.length
+  ) {
+
+    return 'C0001';
+
+  }
 
   const headers =
     values[0];
 
-
   const idColumn =
-    headers.findIndex(function(h) {
+    headers.findIndex(
+      function(header) {
 
-      return String(h)
-        .trim()
-        .toLowerCase() ===
-        'company id';
+        return normalizeHeader(
+          header
+        ) === 'company id';
 
-    });
+      }
+    );
 
+  if (
+    idColumn === -1
+  ) {
+
+    throw new Error(
+      'Company ID column not found.'
+    );
+
+  }
+
+  const used =
+    {};
 
   for (
     let i = 1;
@@ -1014,41 +1544,1285 @@ function getCustomerById(companyId) {
     i++
   ) {
 
-    if (
+    const value =
       String(
-        values[i][idColumn]
-      ).trim() ===
-      String(companyId).trim()
+        values[i][idColumn] || ''
+      )
+      .trim()
+      .toUpperCase();
+
+    const match =
+      value.match(
+        /^C(\d+)$/
+      );
+
+    if (match) {
+
+      used[
+        Number(
+          match[1]
+        )
+      ] = true;
+
+    }
+
+  }
+
+  let number =
+    1;
+
+  while (
+    used[number]
+  ) {
+
+    number++;
+
+  }
+
+  return 'C' +
+    String(number)
+      .padStart(
+        4,
+        '0'
+      );
+
+}
+
+
+/*************************************************
+ * UPDATE INDUSTRIAL AREA
+ *************************************************/
+
+function updateAreaRecord(
+  rowNumber,
+  data
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      AREAS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Areas sheet not found.'
+    );
+
+  }
+
+  const row =
+    Number(
+      rowNumber
+    );
+
+  if (
+    !row ||
+    row < 2 ||
+    row > sheet.getLastRow()
+  ) {
+
+    throw new Error(
+      'Invalid Areas sheet row.'
+    );
+
+  }
+
+  if (!data) {
+
+    throw new Error(
+      'Area data is required.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  const headers =
+    values[0].map(
+      normalizeHeader
+    );
+
+  const areaColumn =
+    headers.indexOf(
+      'industrial area'
+    );
+
+  const cityColumn =
+    headers.indexOf(
+      'city'
+    );
+
+  const latitudeColumn =
+    headers.indexOf(
+      'latitude'
+    );
+
+  const longitudeColumn =
+    headers.indexOf(
+      'longitude'
+    );
+
+  if (
+    areaColumn === -1 ||
+    cityColumn === -1 ||
+    latitudeColumn === -1 ||
+    longitudeColumn === -1
+  ) {
+
+    throw new Error(
+      'Areas sheet must contain Industrial Area, City, Latitude and Longitude columns.'
+    );
+
+  }
+
+  const area =
+    String(
+      data.industrialArea || ''
+    ).trim();
+
+  const city =
+    String(
+      data.city || ''
+    ).trim();
+
+  const latitude =
+    Number(
+      data.latitude
+    );
+
+  const longitude =
+    Number(
+      data.longitude
+    );
+
+  if (!area) {
+
+    throw new Error(
+      'Industrial Area is required.'
+    );
+
+  }
+
+  if (
+    !Number.isFinite(latitude)
+  ) {
+
+    throw new Error(
+      'Invalid Latitude.'
+    );
+
+  }
+
+  if (
+    !Number.isFinite(longitude)
+  ) {
+
+    throw new Error(
+      'Invalid Longitude.'
+    );
+
+  }
+
+  sheet
+    .getRange(
+      row,
+      areaColumn + 1
+    )
+    .setValue(
+      area
+    );
+
+  sheet
+    .getRange(
+      row,
+      cityColumn + 1
+    )
+    .setValue(
+      city
+    );
+
+  sheet
+    .getRange(
+      row,
+      latitudeColumn + 1
+    )
+    .setValue(
+      latitude
+    );
+
+  sheet
+    .getRange(
+      row,
+      longitudeColumn + 1
+    )
+    .setValue(
+      longitude
+    );
+
+  return true;
+
+}
+
+
+/*************************************************
+ * UNIVERSAL SEARCH
+ *
+ * Searches:
+ * - Industrial Areas
+ * - Customers
+ * - People
+ *************************************************/
+
+function universalSearch(
+  query
+) {
+
+  const search =
+    String(
+      query || ''
+    )
+      .trim()
+      .toLowerCase();
+
+  if (!search) {
+
+    return [];
+
+  }
+
+  const results = [];
+
+
+  /***********************************************
+   * INDUSTRIAL AREAS
+   ***********************************************/
+
+  const areas =
+    getIndustrialAreas();
+
+  areas.forEach(
+    function(area) {
+
+      const text =
+        [
+          area.industrialArea,
+          area.city
+        ]
+        .join(' ')
+        .toLowerCase();
+
+      if (
+        text.indexOf(search) !== -1
+      ) {
+
+        results.push({
+
+          type:
+            'area',
+
+          industrialArea:
+            area.industrialArea,
+
+          city:
+            area.city,
+
+          latitude:
+            area.latitude,
+
+          longitude:
+            area.longitude
+
+        });
+
+      }
+
+    }
+  );
+
+
+  /***********************************************
+   * CUSTOMERS
+   ***********************************************/
+
+  const customers =
+    getAllCustomers();
+
+  customers.forEach(
+    function(customer) {
+
+      const text =
+        [
+          customer.companyId,
+          customer.customerName,
+          customer.industrialArea,
+          customer.city,
+          customer.type,
+          customer.status,
+          customer.potential,
+          customer.website,
+          customer.notes
+        ]
+        .join(' ')
+        .toLowerCase();
+
+      if (
+        text.indexOf(search) !== -1
+      ) {
+
+        results.push({
+
+          type:
+            'customer',
+
+          name:
+            customer.customerName,
+
+          companyId:
+            customer.companyId,
+
+          industrialArea:
+            customer.industrialArea,
+
+          city:
+            customer.city
+
+        });
+
+      }
+
+    }
+  );
+
+
+  /***********************************************
+   * PEOPLE
+   ***********************************************/
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const peopleSheet =
+    ss.getSheetByName(
+      PEOPLE_SHEET
+    );
+
+  if (
+    peopleSheet
+  ) {
+
+    const values =
+      peopleSheet
+        .getDataRange()
+        .getDisplayValues();
+
+    if (
+      values.length > 1
     ) {
 
-      const obj = {};
+      const headers =
+        values[0].map(
+          normalizeHeader
+        );
 
-      headers.forEach(
-        function(header, index) {
+      const peopleIdColumn =
+        findHeader(
+          headers,
+          [
+            'people id'
+          ]
+        );
 
-          obj[
-            String(header)
-              .trim()
+      const companyIdColumn =
+        findHeader(
+          headers,
+          [
+            'company id'
+          ]
+        );
+
+      const companyColumn =
+        findHeader(
+          headers,
+          [
+            'company'
+          ]
+        );
+
+      const nameColumn =
+        findHeader(
+          headers,
+          [
+            'name'
+          ]
+        );
+
+      const designationColumn =
+        findHeader(
+          headers,
+          [
+            'designation'
+          ]
+        );
+
+      const phoneColumn =
+        findHeader(
+          headers,
+          [
+            'phone'
+          ]
+        );
+
+      const emailColumn =
+        findHeader(
+          headers,
+          [
+            'email'
+          ]
+        );
+
+
+      /*
+       * Company ID → Industrial Area
+       */
+
+      const companyAreaMap =
+        {};
+
+      customers.forEach(
+        function(customer) {
+
+          companyAreaMap[
+            String(
+              customer.companyId
+            )
+            .trim()
+            .toLowerCase()
           ] =
-            values[i][index];
+            customer.industrialArea;
 
         }
       );
 
-      return obj;
+
+      for (
+        let i = 1;
+        i < values.length;
+        i++
+      ) {
+
+        const row =
+          values[i];
+
+        const peopleId =
+          getCell(
+            row,
+            peopleIdColumn
+          );
+
+        const companyId =
+          getCell(
+            row,
+            companyIdColumn
+          );
+
+        const company =
+          getCell(
+            row,
+            companyColumn
+          );
+
+        const name =
+          getCell(
+            row,
+            nameColumn
+          );
+
+        const designation =
+          getCell(
+            row,
+            designationColumn
+          );
+
+        const phone =
+          getCell(
+            row,
+            phoneColumn
+          );
+
+        const email =
+          getCell(
+            row,
+            emailColumn
+          );
+
+        const area =
+          companyAreaMap[
+            companyId
+              .trim()
+              .toLowerCase()
+          ] || '';
+
+
+        const searchable =
+          [
+            peopleId,
+            companyId,
+            company,
+            name,
+            designation,
+            phone,
+            email,
+            area
+          ]
+          .join(' ')
+          .toLowerCase();
+
+        if (
+          searchable.indexOf(search) !== -1
+        ) {
+
+          results.push({
+
+            type:
+              'person',
+
+            name:
+              name,
+
+            peopleId:
+              peopleId,
+
+            companyId:
+              companyId,
+
+            company:
+              company,
+
+            designation:
+              designation,
+
+            phone:
+              phone,
+
+            email:
+              email,
+
+            industrialArea:
+              area
+
+          });
+
+        }
+
+      }
 
     }
 
   }
 
 
-  return null;
+  return results.slice(
+    0,
+    30
+  );
+
+}
+
+
+/*************************************************
+ * TOTAL CUSTOMER COUNT
+ *************************************************/
+
+function getTotalCustomerCount() {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+  return Math.max(
+    0,
+    sheet.getLastRow() - 1
+  );
+
+}
+
+
+/*************************************************
+ * SPREADSHEET URL
+ *************************************************/
+
+function getSpreadsheetUrl() {
+
+  return SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getUrl();
+
+}
+
+
+/*************************************************
+ * SETTINGS
+ *
+ * Settings sheet contains:
+ *
+ * Industrial Area
+ * City
+ * Type
+ * Status
+ * Designation
+ *
+ * Industrial Hub is no longer used.
+ *************************************************/
+
+function getSettingsOptions() {
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SETTINGS_SHEET);
+
+  if (!sheet) {
+    throw new Error('Settings sheet not found.');
+  }
+
+  const values = sheet.getDataRange().getValues();
+
+  if (!values.length) {
+    return {};
+  }
+
+  const result = {};
+
+  values[0].forEach(function(header, column) {
+
+    const key = String(header || '').trim();
+
+    if (!key) return;
+
+    // Ignore old Industrial Hub column
+    if (key.toLowerCase() === 'industrial hub') {
+      return;
+    }
+
+    const list = [];
+
+    for (let row = 1; row < values.length; row++) {
+
+      const value = String(values[row][column] || '').trim();
+
+      if (value && list.indexOf(value) === -1) {
+        list.push(value);
+      }
+    }
+
+    // Alphabetical order
+    list.sort(function(a, b) {
+      return a.localeCompare(b, undefined, {
+        sensitivity: 'base'
+      });
+    });
+
+    result[key] = list;
+  });
+
+  return result;
+}
+
+/*************************************************
+ * GET ONE SETTINGS LIST
+ *************************************************/
+
+/*************************************************
+ * GET ONE SETTINGS LIST
+ *************************************************/
+
+function getSettingList(
+  settingName
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      SETTINGS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Settings sheet not found.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  if (!values.length) {
+
+    return [];
+
+  }
+
+  const headers =
+    values[0].map(
+      function(header) {
+
+        return String(
+          header || ''
+        ).trim();
+
+      }
+    );
+
+  const column =
+    headers.findIndex(
+      function(header) {
+
+        return header
+          .toLowerCase() ===
+          String(
+            settingName || ''
+          )
+          .trim()
+          .toLowerCase();
+
+      }
+    );
+
+  if (
+    column === -1
+  ) {
+
+    throw new Error(
+      'Setting column not found: ' +
+      settingName
+    );
+
+  }
+
+  const list =
+    [];
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const value =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      value &&
+      list.indexOf(value) === -1
+    ) {
+
+      list.push(
+        value
+      );
+
+    }
+
+  }
+
+  // Alphabetical A-Z
+  list.sort(
+    function(a, b) {
+
+      return String(a).localeCompare(
+        String(b),
+        undefined,
+        {
+          sensitivity: 'base'
+        }
+      );
+
+    }
+  );
+
+  return list;
 
 }
 
 /*************************************************
+ * ADD SETTING
+ *************************************************/
+
+function addSettingValue(
+  settingName,
+  value
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      SETTINGS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Settings sheet not found.'
+    );
+
+  }
+
+  const cleanName =
+    String(
+      settingName || ''
+    ).trim();
+
+  const cleanValue =
+    String(
+      value || ''
+    ).trim();
+
+  if (!cleanName) {
+
+    throw new Error(
+      'Setting name is required.'
+    );
+
+  }
+
+  if (!cleanValue) {
+
+    throw new Error(
+      'Value is required.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  const headers =
+    values[0].map(
+      function(header) {
+
+        return String(
+          header || ''
+        ).trim();
+
+      }
+    );
+
+  const column =
+    headers.findIndex(
+      function(header) {
+
+        return header
+          .toLowerCase() ===
+          cleanName.toLowerCase();
+
+      }
+    );
+
+  if (
+    column === -1
+  ) {
+
+    throw new Error(
+      'Setting column not found: ' +
+      cleanName
+    );
+
+  }
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      cleanValue.toLowerCase()
+    ) {
+
+      throw new Error(
+        '"' +
+        cleanValue +
+        '" already exists.'
+      );
+
+    }
+
+  }
+
+  let targetRow =
+    -1;
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (!existing) {
+
+      targetRow =
+        row + 1;
+
+      break;
+
+    }
+
+  }
+
+  if (
+    targetRow === -1
+  ) {
+
+    targetRow =
+      sheet.getLastRow() + 1;
+
+  }
+
+  sheet
+    .getRange(
+      targetRow,
+      column + 1
+    )
+    .setValue(
+      cleanValue
+    );
+
+  return true;
+
+}
+
+
+/*************************************************
+ * EDIT SETTING
+ *************************************************/
+
+function updateSettingValue(
+  settingName,
+  oldValue,
+  newValue
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      SETTINGS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Settings sheet not found.'
+    );
+
+  }
+
+  const cleanName =
+    String(
+      settingName || ''
+    ).trim();
+
+  const oldText =
+    String(
+      oldValue || ''
+    ).trim();
+
+  const newText =
+    String(
+      newValue || ''
+    ).trim();
+
+  if (!newText) {
+
+    throw new Error(
+      'Value is required.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  const headers =
+    values[0].map(
+      function(header) {
+
+        return String(
+          header || ''
+        ).trim();
+
+      }
+    );
+
+  const column =
+    headers.findIndex(
+      function(header) {
+
+        return header
+          .toLowerCase() ===
+          cleanName.toLowerCase();
+
+      }
+    );
+
+  if (
+    column === -1
+  ) {
+
+    throw new Error(
+      'Setting column not found: ' +
+      cleanName
+    );
+
+  }
+
+  let foundRow =
+    -1;
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      oldText.toLowerCase()
+    ) {
+
+      foundRow =
+        row + 1;
+
+      break;
+
+    }
+
+  }
+
+  if (
+    foundRow === -1
+  ) {
+
+    throw new Error(
+      'Existing value not found: ' +
+      oldText
+    );
+
+  }
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    if (
+      row + 1 === foundRow
+    ) {
+
+      continue;
+
+    }
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      newText.toLowerCase()
+    ) {
+
+      throw new Error(
+        '"' +
+        newText +
+        '" already exists.'
+      );
+
+    }
+
+  }
+
+  sheet
+    .getRange(
+      foundRow,
+      column + 1
+    )
+    .setValue(
+      newText
+    );
+
+  return true;
+
+}
+
+
+/*************************************************
+ * DELETE SETTING
+ *************************************************/
+
+function deleteSettingValue(
+  settingName,
+  value
+) {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      SETTINGS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Settings sheet not found.'
+    );
+
+  }
+
+  const cleanName =
+    String(
+      settingName || ''
+    ).trim();
+
+  const cleanValue =
+    String(
+      value || ''
+    ).trim();
+
+  const values =
+    sheet
+      .getDataRange()
+      .getValues();
+
+  const headers =
+    values[0].map(
+      function(header) {
+
+        return String(
+          header || ''
+        ).trim();
+
+      }
+    );
+
+  const column =
+    headers.findIndex(
+      function(header) {
+
+        return header
+          .toLowerCase() ===
+          cleanName.toLowerCase();
+
+      }
+    );
+
+  if (
+    column === -1
+  ) {
+
+    throw new Error(
+      'Setting column not found: ' +
+      cleanName
+    );
+
+  }
+
+  for (
+    let row = 1;
+    row < values.length;
+    row++
+  ) {
+
+    const existing =
+      String(
+        values[row][column] || ''
+      ).trim();
+
+    if (
+      existing.toLowerCase() ===
+      cleanValue.toLowerCase()
+    ) {
+
+      sheet
+        .getRange(
+          row + 1,
+          column + 1
+        )
+        .clearContent();
+
+      return true;
+
+    }
+
+  }
+
+  throw new Error(
+    'Value not found: ' +
+    cleanValue
+  );
+
+}
+
+
+/*************************************************
  * SAVE PERSON
- * GOOGLE SHEET + GITHUB VISITING CARD
  *************************************************/
 
 function savePersonRecord(
@@ -1058,10 +2832,13 @@ function savePersonRecord(
 ) {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName(PEOPLE_SHEET);
+    ss.getSheetByName(
+      PEOPLE_SHEET
+    );
 
   if (!sheet) {
 
@@ -1071,12 +2848,10 @@ function savePersonRecord(
 
   }
 
-
   const values =
     sheet
       .getDataRange()
       .getValues();
-
 
   if (!values.length) {
 
@@ -1086,24 +2861,19 @@ function savePersonRecord(
 
   }
 
-
   const headers =
-    values[0].map(function(h) {
-
-      return String(h)
-        .trim()
-        .toLowerCase();
-
-    });
-
+    values[0].map(
+      normalizeHeader
+    );
 
   const idColumn =
     headers.indexOf(
       'people id'
     );
 
-
-  if (idColumn === -1) {
+  if (
+    idColumn === -1
+  ) {
 
     throw new Error(
       'People ID column not found.'
@@ -1111,13 +2881,8 @@ function savePersonRecord(
 
   }
 
-
-  let row = -1;
-
-
-  /*
-   * EDIT EXISTING PERSON
-   */
+  let rowNumber =
+    -1;
 
   if (peopleId) {
 
@@ -1129,14 +2894,14 @@ function savePersonRecord(
 
       if (
         String(
-          values[i][idColumn]
+          values[i][idColumn] || ''
         ).trim() ===
         String(
           peopleId
         ).trim()
       ) {
 
-        row =
+        rowNumber =
           i + 1;
 
         break;
@@ -1147,16 +2912,12 @@ function savePersonRecord(
 
   }
 
+  if (
+    rowNumber === -1
+  ) {
 
-  /*
-   * ADD NEW PERSON
-   */
-
-  if (row === -1) {
-
-    row =
+    rowNumber =
       sheet.getLastRow() + 1;
-
 
     peopleId =
       generateNextPeopleId(
@@ -1164,10 +2925,9 @@ function savePersonRecord(
         idColumn
       );
 
-
     sheet
       .getRange(
-        row,
+        rowNumber,
         idColumn + 1
       )
       .setValue(
@@ -1176,41 +2936,30 @@ function savePersonRecord(
 
   }
 
-
-  /*
-   * GET COMPANY NAME
-   */
-
   const companyName =
     getCompanyNameById(
       companyId
     );
-
-
-  /*
-   * GET EXISTING PHOTO
-   */
 
   const photoColumn =
     headers.indexOf(
       'photo'
     );
 
-
   let oldPhoto =
     '';
 
-
   if (
     photoColumn !== -1 &&
-    row <= sheet.getLastRow()
+    rowNumber <=
+      sheet.getLastRow()
   ) {
 
     oldPhoto =
       String(
         sheet
           .getRange(
-            row,
+            rowNumber,
             photoColumn + 1
           )
           .getValue() ||
@@ -1219,16 +2968,11 @@ function savePersonRecord(
 
   }
 
-
-  /*
-   * HANDLE NEW VISITING CARD
-   */
-
   let finalPhoto =
     oldPhoto;
 
-
   if (
+    data &&
     data.photoFile &&
     data.photoFile.base64
   ) {
@@ -1241,11 +2985,6 @@ function savePersonRecord(
       );
 
   }
-
-
-  /*
-   * SAVE SHEET FIELDS
-   */
 
   const fields = {
 
@@ -1272,360 +3011,77 @@ function savePersonRecord(
 
   };
 
-
   Object.keys(fields)
-    .forEach(function(header) {
+    .forEach(
+      function(header) {
 
-      const column =
-        headers.indexOf(
-          header
-        );
-
-
-      if (
-        column !== -1
-      ) {
-
-        sheet
-          .getRange(
-            row,
-            column + 1
-          )
-          .setValue(
-            fields[header]
+        const column =
+          headers.indexOf(
+            header
           );
 
+        if (
+          column !== -1
+        ) {
+
+          sheet
+            .getRange(
+              rowNumber,
+              column + 1
+            )
+            .setValue(
+              fields[header] || ''
+            );
+
+        }
+
       }
-
-    });
-
+    );
 
   return true;
 
 }
 
+
 /*************************************************
- * GET COMPANY NAME BY COMPANY ID
+ * COMPANY NAME
  *************************************************/
 
 function getCompanyNameById(
   companyId
 ) {
 
-  const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
-
-
-  const sheet =
-    ss.getSheetByName(
-      CUSTOMERS_SHEET
+  const customer =
+    getCustomerById(
+      companyId
     );
 
-
-  if (!sheet) {
-
-    throw new Error(
-      'Customers sheet not found.'
-    );
-
-  }
-
-
-  const data =
-    sheet
-      .getDataRange()
-      .getDisplayValues();
-
-
-  if (
-    data.length < 2
-  ) {
+  if (!customer) {
 
     return '';
 
   }
 
-
-  const headers =
-    data[0].map(
-      normalizeHeader
-    );
-
-
-  const idIndex =
-    findHeader(
-      headers,
-      [
-        'company id',
-        'companyid'
-      ]
-    );
-
-
-  const nameIndex =
-    findHeader(
-      headers,
-      [
-        'customer name',
-        'customername'
-      ]
-    );
-
-
-  if (
-    idIndex === -1 ||
-    nameIndex === -1
-  ) {
-
-    throw new Error(
-      'Customers sheet must contain Company ID and Customer Name.'
-    );
-
-  }
-
-
-  const wantedId =
-    String(
-      companyId || ''
-    )
-      .trim()
-      .toLowerCase();
-
-
-  for (
-    let i = 1;
-    i < data.length;
-    i++
-  ) {
-
-    const rowId =
-      String(
-        data[i][idIndex] || ''
-      )
-      .trim()
-      .toLowerCase();
-
-
-    if (
-      rowId === wantedId
-    ) {
-
-      return String(
-        data[i][nameIndex] || ''
-      ).trim();
-
-    }
-
-  }
-
-
-  return '';
+  return String(
+    customer['Customer Name'] ||
+    customer['customer name'] ||
+    ''
+  ).trim();
 
 }
+
 
 /*************************************************
- * SAVE VISITING CARD IMAGE
+ * PEOPLE ID
  *************************************************/
-
-function saveVisitingCardImage(
-  peopleId,
-  fileData,
-  oldPhotoName
-) {
-
-  if (
-    !fileData ||
-    !fileData.base64
-  ) {
-
-    return oldPhotoName || '';
-
-  }
-
-
-  /*
-   * Get / create dedicated folder.
-   */
-
-  const folder =
-    getVisitingCardFolder();
-
-
-  /*
-   * Remove old file when replacing.
-   */
-
-  if (oldPhotoName) {
-
-    try {
-
-      const oldFiles =
-        folder.getFilesByName(
-          oldPhotoName
-        );
-
-
-      while (
-        oldFiles.hasNext()
-      ) {
-
-        const oldFile =
-          oldFiles.next();
-
-
-        oldFile.setTrashed(
-          true
-        );
-
-      }
-
-    } catch (error) {
-
-      console.log(
-        'Old visiting card could not be removed:',
-        error
-      );
-
-    }
-
-  }
-
-
-  /*
-   * Determine extension.
-   */
-
-  const originalName =
-    String(
-      fileData.fileName ||
-      'VisitingCard'
-    );
-
-
-  let extension =
-    'jpg';
-
-
-  const match =
-    originalName.match(
-      /\.([a-zA-Z0-9]+)$/
-    );
-
-
-  if (match) {
-
-    extension =
-      match[1].toLowerCase();
-
-  }
-
-
-  /*
-   * Clean People ID.
-   */
-
-  const safePeopleId =
-    String(
-      peopleId
-    )
-      .replace(
-        /[^a-zA-Z0-9_-]/g,
-        ''
-      );
-
-
-  /*
-   * Generated filename.
-   *
-   * Example:
-   * P0001_VisitingCard.jpg
-   */
-
-  const fileName =
-    safePeopleId +
-    '_VisitingCard.' +
-    extension;
-
-
-  /*
-   * Convert Base64 to blob.
-   */
-
-  const bytes =
-    Utilities
-      .base64Decode(
-        fileData.base64
-      );
-
-
-  const blob =
-    Utilities
-      .newBlob(
-        bytes,
-        fileData.mimeType ||
-          'image/jpeg',
-        fileName
-      );
-
-
-  /*
-   * Create Drive file.
-   */
-
-  const file =
-    folder.createFile(
-      blob
-    );
-
-
-  /*
-   * Return ONLY filename.
-   * This goes into People > Photo.
-   */
-
-  return file.getName();
-
-}
-
-/*************************************************
- * VISITING CARD FOLDER
- *************************************************/
-
-function getVisitingCardFolder() {
-
-  const folderName =
-    'Customers Hub - Visiting Cards';
-
-
-  const folders =
-    DriveApp.getFoldersByName(
-      folderName
-    );
-
-
-  if (
-    folders.hasNext()
-  ) {
-
-    return folders.next();
-
-  }
-
-
-  return DriveApp.createFolder(
-    folderName
-  );
-
-}
 
 function generateNextPeopleId(
   values,
   idColumn
 ) {
 
-  let max = 0;
-
+  let max =
+    0;
 
   for (
     let i = 1;
@@ -1638,60 +3094,97 @@ function generateNextPeopleId(
         values[i][idColumn] || ''
       ).trim();
 
-
     const match =
       value.match(
         /^P(\d+)$/i
       );
-
 
     if (match) {
 
       max =
         Math.max(
           max,
-          Number(match[1])
+          Number(
+            match[1]
+          )
         );
 
     }
 
   }
 
-
   return 'P' +
     String(
       max + 1
-    ).padStart(4, '0');
+    ).padStart(
+      4,
+      '0'
+    );
 
 }
 
-function getPersonById(peopleId) {
+
+/*************************************************
+ * GET PERSON BY ID
+ *************************************************/
+
+function getPersonById(
+  peopleId
+) {
 
   const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+    SpreadsheetApp
+      .getActiveSpreadsheet();
 
   const sheet =
-    ss.getSheetByName('People');
+    ss.getSheetByName(
+      PEOPLE_SHEET
+    );
 
+  if (!sheet) {
+
+    throw new Error(
+      'People sheet not found.'
+    );
+
+  }
 
   const values =
-    sheet.getDataRange().getValues();
+    sheet
+      .getDataRange()
+      .getValues();
 
+  if (
+    values.length < 2
+  ) {
+
+    return null;
+
+  }
 
   const headers =
     values[0];
 
-
   const idColumn =
-    headers.findIndex(function(h) {
+    headers.findIndex(
+      function(header) {
 
-      return String(h)
-        .trim()
-        .toLowerCase() ===
-        'people id';
+        return normalizeHeader(
+          header
+        ) === 'people id';
 
-    });
+      }
+    );
 
+  if (
+    idColumn === -1
+  ) {
+
+    throw new Error(
+      'People ID column not found.'
+    );
+
+  }
 
   for (
     let i = 1;
@@ -1701,167 +3194,42 @@ function getPersonById(peopleId) {
 
     if (
       String(
-        values[i][idColumn]
+        values[i][idColumn] || ''
       ).trim() ===
-      String(peopleId).trim()
+      String(
+        peopleId
+      ).trim()
     ) {
 
-      const obj = {};
+      const person =
+        {};
 
       headers.forEach(
         function(header, index) {
 
-          obj[
-            String(header).trim()
+          person[
+            String(
+              header
+            ).trim()
           ] =
             values[i][index];
 
         }
       );
 
-      return obj;
+      return person;
 
     }
 
   }
-
 
   return null;
 
 }
 
-/*************************************************
- * GET SETTINGS DROPDOWN VALUES
- *************************************************/
-
-function getSettingsOptions() {
-
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName('Settings');
-
-  if (!sheet) {
-    throw new Error(
-      'Settings sheet not found.'
-    );
-  }
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  if (!values.length) {
-    return {};
-  }
-
-  const result = {};
-
-  /*
-   * Settings sheet has the following headers:
-   *
-   * Industrial Area
-   * City
-   * Industrial Hub
-   * Designation
-   * Type
-   * Status
-   */
-
-  values[0].forEach(
-    function(header, columnIndex) {
-
-      const key =
-        String(header)
-          .trim();
-
-      if (!key) {
-        return;
-      }
-
-      const list = [];
-
-      for (
-        let row = 1;
-        row < values.length;
-        row++
-      ) {
-
-        const value =
-          String(
-            values[row][columnIndex] || ''
-          ).trim();
-
-        if (
-          value &&
-          list.indexOf(value) === -1
-        ) {
-
-          list.push(value);
-
-        }
-
-      }
-
-      result[key] = list;
-
-    }
-  );
-
-  return result;
-}
 
 /*************************************************
- * GITHUB TOKEN
- * API Key sheet A3
- *************************************************/
-
-function getGitHubToken() {
-
-  const ss =
-    SpreadsheetApp
-      .getActiveSpreadsheet();
-
-
-  const sheet =
-    ss.getSheetByName(
-      API_KEY_SHEET
-    );
-
-
-  if (!sheet) {
-
-    throw new Error(
-      'API Key sheet not found.'
-    );
-
-  }
-
-
-  const token =
-    String(
-      sheet
-        .getRange('A3')
-        .getDisplayValue() ||
-      ''
-    ).trim();
-
-
-  if (!token) {
-
-    throw new Error(
-      'GitHub token not found in API Key!A3.'
-    );
-
-  }
-
-
-  return token;
-
-}
-
-/*************************************************
- * GITHUB SETTINGS
+ * GITHUB CONFIG
  *************************************************/
 
 const GITHUB_OWNER =
@@ -1878,267 +3246,53 @@ const GITHUB_FOLDER =
 
 
 /*************************************************
- * UPLOAD / UPDATE VISITING CARD
+ * GITHUB TOKEN
  *************************************************/
 
-function uploadVisitingCardToGitHub(
-  contactName,
-  fileData,
-  oldPhotoName
-) {
+function getGitHubToken() {
 
-  if (
-    !contactName
-  ) {
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      API_KEY_SHEET
+    );
+
+  if (!sheet) {
 
     throw new Error(
-      'Contact name is required before uploading the visiting card.'
+      'API Key sheet not found.'
     );
 
   }
-
-
-  if (
-    !fileData ||
-    !fileData.base64
-  ) {
-
-    return oldPhotoName || '';
-
-  }
-
 
   const token =
-    getGitHubToken();
-
-
-  /*
-   * Clean contact name.
-   */
-
-  const cleanName =
     String(
-      contactName
-    )
-      .trim()
-      .replace(
-        /[\\/:*?"<>|]/g,
-        ''
-      )
-      .replace(
-        /\s+/g,
-        ' '
-      );
-
-
-  if (!cleanName) {
-
-    throw new Error(
-      'Invalid contact name.'
-    );
-
-  }
-
-
-  /*
-   * Get extension from uploaded file.
-   */
-
-  let extension =
-    'png';
-
-
-  const originalName =
-    String(
-      fileData.fileName ||
+      sheet
+        .getRange(
+          'A3'
+        )
+        .getDisplayValue() ||
       ''
-    );
+    ).trim();
 
-
-  const match =
-    originalName.match(
-      /\.([a-zA-Z0-9]+)$/
-    );
-
-
-  if (match) {
-
-    extension =
-      match[1]
-        .toLowerCase();
-
-  }
-
-
-  /*
-   * Keep only common image extensions.
-   */
-
-  const allowed =
-    [
-      'jpg',
-      'jpeg',
-      'png',
-      'webp'
-    ];
-
-
-  if (
-    allowed.indexOf(
-      extension
-    ) === -1
-  ) {
-
-    extension =
-      'png';
-
-  }
-
-
-  /*
-   * Final filename.
-   *
-   * Example:
-   * Rajinikanth H C.png
-   */
-
-  const newFileName =
-    cleanName +
-    '.' +
-    extension;
-
-
-  /*
-   * If an old filename exists
-   * and it is different, remove it.
-   */
-
-  if (
-    oldPhotoName &&
-    oldPhotoName !==
-      newFileName
-  ) {
-
-    deleteGitHubFile(
-      oldPhotoName,
-      token
-    );
-
-  }
-
-
-  /*
-   * Upload / update new file.
-   */
-
-  const existing =
-    getGitHubFile(
-      newFileName,
-      token
-    );
-
-
-  const url =
-    getGitHubContentsUrl(
-      newFileName
-    );
-
-
-  const payload = {
-
-    message:
-      existing
-        ? 'Update visiting card - ' +
-          newFileName
-        : 'Add visiting card - ' +
-          newFileName,
-
-    content:
-      fileData.base64,
-
-    branch:
-      GITHUB_BRANCH
-
-  };
-
-
-  if (
-    existing &&
-    existing.sha
-  ) {
-
-    payload.sha =
-      existing.sha;
-
-  }
-
-
-  const response =
-    UrlFetchApp.fetch(
-      url,
-      {
-
-        method:
-          'put',
-
-        contentType:
-          'application/json',
-
-        headers: {
-
-          Authorization:
-            'Bearer ' +
-            token,
-
-          Accept:
-            'application/vnd.github+json',
-
-          'X-GitHub-Api-Version':
-            '2022-11-28'
-
-        },
-
-        payload:
-          JSON.stringify(
-            payload
-          ),
-
-        muteHttpExceptions:
-          true
-
-      }
-    );
-
-
-  const code =
-    response.getResponseCode();
-
-
-  const body =
-    response.getContentText();
-
-
-  if (
-    code !== 200 &&
-    code !== 201
-  ) {
+  if (!token) {
 
     throw new Error(
-      'GitHub upload failed (' +
-      code +
-      '): ' +
-      body
+      'GitHub token not found in API Key!A3.'
     );
 
   }
 
-
-  return newFileName;
+  return token;
 
 }
 
+
 /*************************************************
- * GITHUB CONTENTS URL
+ * GITHUB CONTENT URL
  *************************************************/
 
 function getGitHubContentsUrl(
@@ -2162,7 +3316,7 @@ function getGitHubContentsUrl(
 
 
 /*************************************************
- * GET EXISTING GITHUB FILE
+ * GET GITHUB FILE
  *************************************************/
 
 function getGitHubFile(
@@ -2170,15 +3324,11 @@ function getGitHubFile(
   token
 ) {
 
-  const url =
-    getGitHubContentsUrl(
-      fileName
-    );
-
-
   const response =
     UrlFetchApp.fetch(
-      url,
+      getGitHubContentsUrl(
+        fileName
+      ),
       {
 
         method:
@@ -2204,10 +3354,8 @@ function getGitHubFile(
       }
     );
 
-
   const code =
     response.getResponseCode();
-
 
   if (
     code === 404
@@ -2216,7 +3364,6 @@ function getGitHubFile(
     return null;
 
   }
-
 
   if (
     code !== 200
@@ -2229,7 +3376,6 @@ function getGitHubFile(
 
   }
 
-
   return JSON.parse(
     response.getContentText()
   );
@@ -2238,7 +3384,7 @@ function getGitHubFile(
 
 
 /*************************************************
- * DELETE OLD GITHUB FILE
+ * DELETE GITHUB FILE
  *************************************************/
 
 function deleteGitHubFile(
@@ -2247,18 +3393,14 @@ function deleteGitHubFile(
 ) {
 
   if (!fileName) {
-
     return;
-
   }
-
 
   const existing =
     getGitHubFile(
       fileName,
       token
     );
-
 
   if (
     !existing ||
@@ -2268,13 +3410,6 @@ function deleteGitHubFile(
     return;
 
   }
-
-
-  const url =
-    getGitHubContentsUrl(
-      fileName
-    );
-
 
   const payload = {
 
@@ -2290,10 +3425,11 @@ function deleteGitHubFile(
 
   };
 
-
   const response =
     UrlFetchApp.fetch(
-      url,
+      getGitHubContentsUrl(
+        fileName
+      ),
       {
 
         method:
@@ -2327,13 +3463,9 @@ function deleteGitHubFile(
       }
     );
 
-
-  const code =
-    response.getResponseCode();
-
-
   if (
-    code !== 200
+    response.getResponseCode() !==
+    200
   ) {
 
     throw new Error(
@@ -2347,7 +3479,209 @@ function deleteGitHubFile(
 
 
 /*************************************************
- * GITHUB RAW IMAGE URL
+ * UPLOAD VISITING CARD TO GITHUB
+ *************************************************/
+
+function uploadVisitingCardToGitHub(
+  contactName,
+  fileData,
+  oldPhotoName
+) {
+
+  if (!contactName) {
+
+    throw new Error(
+      'Contact name is required before uploading the visiting card.'
+    );
+
+  }
+
+  if (
+    !fileData ||
+    !fileData.base64
+  ) {
+
+    return oldPhotoName || '';
+
+  }
+
+  const token =
+    getGitHubToken();
+
+  const cleanName =
+    String(
+      contactName
+    )
+      .trim()
+      .replace(
+        /[\\/:*?"<>|]/g,
+        ''
+      )
+      .replace(
+        /\s+/g,
+        ' '
+      );
+
+  if (!cleanName) {
+
+    throw new Error(
+      'Invalid contact name.'
+    );
+
+  }
+
+  let extension =
+    'png';
+
+  const originalName =
+    String(
+      fileData.fileName || ''
+    );
+
+  const match =
+    originalName.match(
+      /\.([a-zA-Z0-9]+)$/
+    );
+
+  if (match) {
+
+    extension =
+      match[1].toLowerCase();
+
+  }
+
+  const allowed =
+    [
+      'jpg',
+      'jpeg',
+      'png',
+      'webp'
+    ];
+
+  if (
+    allowed.indexOf(
+      extension
+    ) === -1
+  ) {
+
+    extension =
+      'png';
+
+  }
+
+  const newFileName =
+    cleanName +
+    '.' +
+    extension;
+
+  if (
+    oldPhotoName &&
+    oldPhotoName !==
+      newFileName
+  ) {
+
+    deleteGitHubFile(
+      oldPhotoName,
+      token
+    );
+
+  }
+
+  const existing =
+    getGitHubFile(
+      newFileName,
+      token
+    );
+
+  const payload = {
+
+    message:
+      existing
+        ? 'Update visiting card - ' +
+          newFileName
+        : 'Add visiting card - ' +
+          newFileName,
+
+    content:
+      fileData.base64,
+
+    branch:
+      GITHUB_BRANCH
+
+  };
+
+  if (
+    existing &&
+    existing.sha
+  ) {
+
+    payload.sha =
+      existing.sha;
+
+  }
+
+  const response =
+    UrlFetchApp.fetch(
+      getGitHubContentsUrl(
+        newFileName
+      ),
+      {
+
+        method:
+          'put',
+
+        contentType:
+          'application/json',
+
+        headers: {
+
+          Authorization:
+            'Bearer ' +
+            token,
+
+          Accept:
+            'application/vnd.github+json',
+
+          'X-GitHub-Api-Version':
+            '2022-11-28'
+
+        },
+
+        payload:
+          JSON.stringify(
+            payload
+          ),
+
+        muteHttpExceptions:
+          true
+
+      }
+    );
+
+  const code =
+    response.getResponseCode();
+
+  if (
+    code !== 200 &&
+    code !== 201
+  ) {
+
+    throw new Error(
+      'GitHub upload failed (' +
+      code +
+      '): ' +
+      response.getContentText()
+    );
+
+  }
+
+  return newFileName;
+
+}
+
+
+/*************************************************
+ * GITHUB IMAGE URL
  *************************************************/
 
 function getGitHubImageUrl(
@@ -2359,7 +3693,6 @@ function getGitHubImageUrl(
     return '';
 
   }
-
 
   return (
     'https://raw.githubusercontent.com/' +
@@ -2378,1573 +3711,239 @@ function getGitHubImageUrl(
 
 }
 
+
 /*************************************************
- * GET LOWEST AVAILABLE COMPANY ID
+ * SAVE VISITING CARD IMAGE
  *************************************************/
 
-function getNextAvailableCompanyId() {
+function saveVisitingCardImage(
+  peopleId,
+  fileData,
+  oldPhotoName
+) {
 
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
+  if (
+    !fileData ||
+    !fileData.base64
+  ) {
 
-  const sheet =
-    ss.getSheetByName(
-      CUSTOMERS_SHEET
-    );
-
-
-  if (!sheet) {
-
-    throw new Error(
-      'Customers sheet not found.'
-    );
+    return oldPhotoName || '';
 
   }
 
+  const folder =
+    getVisitingCardFolder();
 
-  const values =
-    sheet
-      .getDataRange()
-      .getValues();
+  if (oldPhotoName) {
 
+    try {
 
-  if (!values.length) {
+      const oldFiles =
+        folder.getFilesByName(
+          oldPhotoName
+        );
 
-    return 'C0001';
+      while (
+        oldFiles.hasNext()
+      ) {
 
-  }
-
-
-  const headers =
-    values[0];
-
-
-  const idColumn =
-    headers.findIndex(
-      function (header) {
-
-        return String(header)
-          .trim()
-          .toLowerCase() ===
-          'company id';
+        oldFiles
+          .next()
+          .setTrashed(
+            true
+          );
 
       }
-    );
 
+    } catch (error) {
 
-  if (idColumn === -1) {
+      console.log(
+        'Old visiting card could not be removed:',
+        error
+      );
 
-    throw new Error(
-      'Company ID column not found.'
-    );
+    }
 
   }
 
+  const originalName =
+    String(
+      fileData.fileName ||
+      'VisitingCard'
+    );
 
-  const usedIds =
-    {};
+  let extension =
+    'jpg';
 
+  const match =
+    originalName.match(
+      /\.([a-zA-Z0-9]+)$/
+    );
+
+  if (match) {
+
+    extension =
+      match[1].toLowerCase();
+
+  }
+
+  const safePeopleId =
+    String(
+      peopleId
+    )
+      .replace(
+        /[^a-zA-Z0-9_-]/g,
+        ''
+      );
+
+  const fileName =
+    safePeopleId +
+    '_VisitingCard.' +
+    extension;
+
+  const bytes =
+    Utilities
+      .base64Decode(
+        fileData.base64
+      );
+
+  const blob =
+    Utilities
+      .newBlob(
+        bytes,
+        fileData.mimeType ||
+          'image/jpeg',
+        fileName
+      );
+
+  const file =
+    folder.createFile(
+      blob
+    );
+
+  return file.getName();
+
+}
+
+
+/*************************************************
+ * DRIVE VISITING CARD FOLDER
+ *************************************************/
+
+function getVisitingCardFolder() {
+
+  const folderName =
+    'Customers Hub - Visiting Cards';
+
+  const folders =
+    DriveApp.getFoldersByName(
+      folderName
+    );
+
+  if (
+    folders.hasNext()
+  ) {
+
+    return folders.next();
+
+  }
+
+  return DriveApp.createFolder(
+    folderName
+  );
+
+}
+
+
+/*************************************************
+ * HELPERS
+ *************************************************/
+
+function getCell(
+  row,
+  index
+) {
+
+  if (
+    index === -1 ||
+    index >= row.length
+  ) {
+
+    return '';
+
+  }
+
+  return String(
+    row[index] || ''
+  ).trim();
+
+}
+
+
+function normalizeHeader(
+  value
+) {
+
+  return String(
+    value || ''
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /\s+/g,
+      ' '
+    );
+
+}
+
+
+function findHeader(
+  headers,
+  names
+) {
 
   for (
-    let i = 1;
-    i < values.length;
+    let i = 0;
+    i < headers.length;
     i++
   ) {
 
-    const value =
-      String(
-        values[i][idColumn] || ''
-      )
-      .trim()
-      .toUpperCase();
+    if (
+      names.indexOf(
+        headers[i]
+      ) !== -1
+    ) {
 
-
-    const match =
-      value.match(
-        /^C(\d+)$/
-      );
-
-
-    if (match) {
-
-      usedIds[
-        Number(match[1])
-      ] = true;
+      return i;
 
     }
 
   }
 
-
-  let number = 1;
-
-
-  while (
-    usedIds[number]
-  ) {
-
-    number++;
-
-  }
-
-
-  return 'C' +
-    String(number)
-      .padStart(
-        4,
-        '0'
-      );
+  return -1;
 
 }
 
 
-/*************************************************
- * SAVE NEW CUSTOMER
- *************************************************/
-
-function saveNewCustomerRecord(
-  data
-) {
-
-  const lock =
-    LockService.getScriptLock();
-
-
-  lock.waitLock(
-    30000
-  );
-
-
-  try {
-
-    const ss =
-      SpreadsheetApp
-        .getActiveSpreadsheet();
-
-
-    const sheet =
-      ss.getSheetByName(
-        CUSTOMERS_SHEET
-      );
-
-
-    if (!sheet) {
-
-      throw new Error(
-        'Customers sheet not found.'
-      );
-
-    }
-
-
-    if (
-      !data ||
-      !data.customerName
-    ) {
-
-      throw new Error(
-        'Customer Name is required.'
-      );
-
-    }
-
-
-    const values =
-      sheet
-        .getDataRange()
-        .getValues();
-
-
-    if (!values.length) {
-
-      throw new Error(
-        'Customers sheet is empty.'
-      );
-
-    }
-
-
-    const headers =
-      values[0].map(
-        function (header) {
-
-          return String(header)
-            .trim()
-            .toLowerCase();
-
-        }
-      );
-
-
-    const idColumn =
-      headers.indexOf(
-        'company id'
-      );
-
-
-    if (idColumn === -1) {
-
-      throw new Error(
-        'Company ID column not found.'
-      );
-
-    }
-
-
-    /*
-     * Generate again while locked.
-     *
-     * This guarantees that two users
-     * cannot accidentally get the same ID.
-     */
-
-    const companyId =
-      getNextAvailableCompanyId();
-
-
-    /*
-     * Create a blank row based on
-     * the existing sheet columns.
-     */
-
-    const newRow =
-      new Array(
-        headers.length
-      )
-      .fill('');
-
-
-    /*
-     * Helper to safely set
-     * a column by header.
-     */
-
-    function setField(
-      header,
-      value
-    ) {
-
-      const column =
-        headers.indexOf(
-          header
-        );
-
-
-      if (
-        column !== -1
-      ) {
-
-        newRow[column] =
-          value || '';
-
-      }
-
-    }
-
-
-    setField(
-      'company id',
-      companyId
-    );
-
-
-    setField(
-      'customer name',
-      data.customerName
-    );
-
-
-    setField(
-      'industrial area',
-      data.industrialArea
-    );
-
-
-    setField(
-      'industrial hub',
-      data.industrialHub
-    );
-
-
-    setField(
-      'city',
-      data.city
-    );
-
-
-    setField(
-      'type',
-      data.type
-    );
-
-
-    setField(
-      'status',
-      data.status
-    );
-
-
-    setField(
-      'potential',
-      data.potential
-    );
-
-
-    setField(
-      'website',
-      data.website
-    );
-
-
-    setField(
-      'notes',
-      data.notes
-    );
-
-
-    /*
-     * Add customer.
-     */
-
-    sheet
-      .appendRow(
-        newRow
-      );
-
-
-    return companyId;
-
-
-  } finally {
-
-    lock.releaseLock();
-
-  }
-
-}
-
-/*************************************************
- * UNIVERSAL SEARCH
- *************************************************/
-
-function universalSearch(
-  query
-) {
-
-  const search =
-    String(
-      query || ''
-    )
-    .trim()
-    .toLowerCase();
-
-
-  if (!search) {
-
-    return [];
-
-  }
-
-
-  const results = [];
-
-
-  /*
-   * INDUSTRIAL HUBS
-   */
-
-  const hubs =
-    getIndustrialHubs();
-
-
-  hubs.forEach(
-    function (hub) {
-
-      const text =
-        [
-          hub.hub,
-          hub.city
-        ]
-        .join(' ')
-        .toLowerCase();
-
-
-      if (
-        text.indexOf(
-          search
-        ) !== -1
-      ) {
-
-        results.push({
-
-          type:
-            'hub',
-
-          name:
-            hub.hub,
-
-          city:
-            hub.city
-
-        });
-
-      }
-
-    }
-  );
-
-
-  /*
-   * CUSTOMERS
-   */
-
-  const customerSheet =
-    SpreadsheetApp
-      .getActiveSpreadsheet()
-      .getSheetByName(
-        CUSTOMERS_SHEET
-      );
-
-
-  if (customerSheet) {
-
-    const data =
-      customerSheet
-        .getDataRange()
-        .getDisplayValues();
-
-
-    if (
-      data.length > 1
-    ) {
-
-      const headers =
-        data[0].map(
-          normalizeHeader
-        );
-
-
-      const companyIdIndex =
-        findHeader(
-          headers,
-          [
-            'company id'
-          ]
-        );
-
-
-      const nameIndex =
-        findHeader(
-          headers,
-          [
-            'customer name'
-          ]
-        );
-
-
-      const areaIndex =
-        findHeader(
-          headers,
-          [
-            'industrial area'
-          ]
-        );
-
-
-      const hubIndex =
-        findHeader(
-          headers,
-          [
-            'industrial hub'
-          ]
-        );
-
-
-      const cityIndex =
-        findHeader(
-          headers,
-          [
-            'city'
-          ]
-        );
-
-
-      const typeIndex =
-        findHeader(
-          headers,
-          [
-            'type'
-          ]
-        );
-
-
-      const statusIndex =
-        findHeader(
-          headers,
-          [
-            'status'
-          ]
-        );
-
-
-      const potentialIndex =
-        findHeader(
-          headers,
-          [
-            'potential'
-          ]
-        );
-
-
-      const websiteIndex =
-        findHeader(
-          headers,
-          [
-            'website'
-          ]
-        );
-
-
-      const notesIndex =
-        findHeader(
-          headers,
-          [
-            'notes'
-          ]
-        );
-
-
-      for (
-        let i = 1;
-        i < data.length;
-        i++
-      ) {
-
-        const row =
-          data[i];
-
-
-        const companyId =
-          getCell(
-            row,
-            companyIdIndex
-          );
-
-
-        const name =
-          getCell(
-            row,
-            nameIndex
-          );
-
-
-        const area =
-          getCell(
-            row,
-            areaIndex
-          );
-
-
-        const hub =
-          getCell(
-            row,
-            hubIndex
-          );
-
-
-        const city =
-          getCell(
-            row,
-            cityIndex
-          );
-
-
-        const type =
-          getCell(
-            row,
-            typeIndex
-          );
-
-
-        const status =
-          getCell(
-            row,
-            statusIndex
-          );
-
-
-        const potential =
-          getCell(
-            row,
-            potentialIndex
-          );
-
-
-        const website =
-          getCell(
-            row,
-            websiteIndex
-          );
-
-
-        const notes =
-          getCell(
-            row,
-            notesIndex
-          );
-
-
-        const searchable =
-          [
-            companyId,
-            name,
-            area,
-            hub,
-            city,
-            type,
-            status,
-            potential,
-            website,
-            notes
-          ]
-          .join(' ')
-          .toLowerCase();
-
-
-        if (
-          searchable.indexOf(
-            search
-          ) !== -1
-        ) {
-
-          results.push({
-
-            type:
-              'customer',
-
-            name:
-              name,
-
-            companyId:
-              companyId,
-
-            industrialArea:
-              area,
-
-            industrialHub:
-              hub,
-
-            city:
-              city
-
-          });
-
-        }
-
-      }
-
-    }
-
-  }
-
-
-  /*
-   * PEOPLE
-   */
-
-  const peopleSheet =
-    SpreadsheetApp
-      .getActiveSpreadsheet()
-      .getSheetByName(
-        PEOPLE_SHEET
-      );
-
-
-  if (peopleSheet) {
-
-    const data =
-      peopleSheet
-        .getDataRange()
-        .getDisplayValues();
-
-
-    if (
-      data.length > 1
-    ) {
-
-      const headers =
-        data[0].map(
-          normalizeHeader
-        );
-
-
-      const peopleIdIndex =
-        findHeader(
-          headers,
-          [
-            'people id'
-          ]
-        );
-
-
-      const companyIdIndex =
-        findHeader(
-          headers,
-          [
-            'company id'
-          ]
-        );
-
-
-      const companyIndex =
-        findHeader(
-          headers,
-          [
-            'company'
-          ]
-        );
-
-
-      const nameIndex =
-        findHeader(
-          headers,
-          [
-            'name'
-          ]
-        );
-
-
-      const designationIndex =
-        findHeader(
-          headers,
-          [
-            'designation'
-          ]
-        );
-
-
-      const phoneIndex =
-        findHeader(
-          headers,
-          [
-            'phone'
-          ]
-        );
-
-
-      const emailIndex =
-        findHeader(
-          headers,
-          [
-            'email'
-          ]
-        );
-
-
-      /*
-       * Build Company ID → Hub
-       */
-
-      const companyHubMap =
-        {};
-
-
-      const customerData =
-        customerSheet
-          ? customerSheet
-              .getDataRange()
-              .getDisplayValues()
-          : [];
-
-
-      if (
-        customerData.length > 1
-      ) {
-
-        const customerHeaders =
-          customerData[0].map(
-            normalizeHeader
-          );
-
-
-        const cId =
-          findHeader(
-            customerHeaders,
-            [
-              'company id'
-            ]
-          );
-
-
-        const cHub =
-          findHeader(
-            customerHeaders,
-            [
-              'industrial hub'
-            ]
-          );
-
-
-        for (
-          let i = 1;
-          i < customerData.length;
-          i++
-        ) {
-
-          companyHubMap[
-            getCell(
-              customerData[i],
-              cId
-            ).toLowerCase()
-          ] =
-            getCell(
-              customerData[i],
-              cHub
-            );
-
-        }
-
-      }
-
-
-      for (
-        let i = 1;
-        i < data.length;
-        i++
-      ) {
-
-        const row =
-          data[i];
-
-
-        const peopleId =
-          getCell(
-            row,
-            peopleIdIndex
-          );
-
-
-        const companyId =
-          getCell(
-            row,
-            companyIdIndex
-          );
-
-
-        const company =
-          getCell(
-            row,
-            companyIndex
-          );
-
-
-        const name =
-          getCell(
-            row,
-            nameIndex
-          );
-
-
-        const designation =
-          getCell(
-            row,
-            designationIndex
-          );
-
-
-        const phone =
-          getCell(
-            row,
-            phoneIndex
-          );
-
-
-        const email =
-          getCell(
-            row,
-            emailIndex
-          );
-
-
-        const hub =
-          companyHubMap[
-            companyId.toLowerCase()
-          ] || '';
-
-
-        const searchable =
-          [
-            peopleId,
-            companyId,
-            company,
-            name,
-            designation,
-            phone,
-            email,
-            hub
-          ]
-          .join(' ')
-          .toLowerCase();
-
-
-        if (
-          searchable.indexOf(
-            search
-          ) !== -1
-        ) {
-
-          results.push({
-
-            type:
-              'person',
-
-            name:
-              name,
-
-            peopleId:
-              peopleId,
-
-            companyId:
-              companyId,
-
-            company:
-              company,
-
-            designation:
-              designation,
-
-            phone:
-              phone,
-
-            email:
-              email,
-
-            industrialHub:
-              hub
-
-          });
-
-        }
-
-      }
-
-    }
-
-  }
-
-
-  /*
-   * Keep result list manageable.
-   */
-
-  return results.slice(
-    0,
-    30
-  );
-
-}
-
-/*************************************************
- * SETTINGS MANAGER
- * ADD / EDIT / DELETE SETTINGS VALUES
- *************************************************/
-
-function getSettingList(settingName) {
-
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName('Settings');
-
-  if (!sheet) {
-    throw new Error('Settings sheet not found.');
-  }
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  if (!values.length) {
-    throw new Error('Settings sheet is empty.');
-  }
-
-  const headers =
-    values[0].map(function (h) {
-      return String(h || '').trim();
-    });
-
-  const column =
-    headers.findIndex(function (header) {
-      return header.toLowerCase() ===
-        String(settingName || '').trim().toLowerCase();
-    });
-
-  if (column === -1) {
-    throw new Error(
-      'Setting column not found: ' + settingName
-    );
-  }
-
-  const list = [];
-
-  for (
-    let row = 1;
-    row < values.length;
-    row++
-  ) {
-
-    const value =
-      String(
-        values[row][column] || ''
-      ).trim();
-
-    if (
-      value &&
-      !list.some(function (item) {
-        return item.toLowerCase() === value.toLowerCase();
-      })
-    ) {
-
-      list.push(value);
-
-    }
-
-  }
-
-  return list;
-}
-
-
-/*************************************************
- * ADD SETTING VALUE
- *************************************************/
-
-function addSettingValue(
-  settingName,
+function setRowField(
+  row,
+  headers,
+  header,
   value
 ) {
 
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName('Settings');
-
-  if (!sheet) {
-    throw new Error('Settings sheet not found.');
-  }
-
-  const cleanName =
-    String(settingName || '').trim();
-
-  const cleanValue =
-    String(value || '').trim();
-
-  if (!cleanName) {
-    throw new Error('Setting name is required.');
-  }
-
-  if (!cleanValue) {
-    throw new Error('Value is required.');
-  }
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  const headers =
-    values[0].map(function (h) {
-      return String(h || '').trim();
-    });
-
   const column =
-    headers.findIndex(function (header) {
-      return header.toLowerCase() ===
-        cleanName.toLowerCase();
-    });
-
-  if (column === -1) {
-    throw new Error(
-      'Setting column not found: ' + cleanName
+    headers.indexOf(
+      header
     );
-  }
-
-  /*
-   * Prevent duplicate values.
-   */
-
-  for (
-    let row = 1;
-    row < values.length;
-    row++
-  ) {
-
-    const existing =
-      String(
-        values[row][column] || ''
-      ).trim();
-
-    if (
-      existing.toLowerCase() ===
-      cleanValue.toLowerCase()
-    ) {
-
-      throw new Error(
-        '"' + cleanValue +
-        '" already exists.'
-      );
-
-    }
-
-  }
-
-  /*
-   * Put new value in first empty cell.
-   */
-
-  let targetRow = -1;
-
-  for (
-    let row = 1;
-    row < values.length;
-    row++
-  ) {
-
-    const existing =
-      String(
-        values[row][column] || ''
-      ).trim();
-
-    if (!existing) {
-
-      targetRow =
-        row + 1;
-
-      break;
-
-    }
-
-  }
-
-  /*
-   * If no empty cell exists,
-   * append a new row.
-   */
-
-  if (targetRow === -1) {
-
-    targetRow =
-      sheet.getLastRow() + 1;
-
-  }
-
-  sheet
-    .getRange(
-      targetRow,
-      column + 1
-    )
-    .setValue(
-      cleanValue
-    );
-
-  return true;
-}
-
-
-/*************************************************
- * EDIT SETTING VALUE
- *************************************************/
-
-function updateSettingValue(
-  settingName,
-  oldValue,
-  newValue
-) {
-
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName('Settings');
-
-  if (!sheet) {
-    throw new Error('Settings sheet not found.');
-  }
-
-  const cleanName =
-    String(settingName || '').trim();
-
-  const oldText =
-    String(oldValue || '').trim();
-
-  const newText =
-    String(newValue || '').trim();
-
-  if (!newText) {
-    throw new Error('Value is required.');
-  }
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  const headers =
-    values[0].map(function (h) {
-      return String(h || '').trim();
-    });
-
-  const column =
-    headers.findIndex(function (header) {
-      return header.toLowerCase() ===
-        cleanName.toLowerCase();
-    });
-
-  if (column === -1) {
-    throw new Error(
-      'Setting column not found: ' + cleanName
-    );
-  }
-
-  let foundRow = -1;
-
-  for (
-    let row = 1;
-    row < values.length;
-    row++
-  ) {
-
-    const existing =
-      String(
-        values[row][column] || ''
-      ).trim();
-
-    if (
-      existing.toLowerCase() ===
-      oldText.toLowerCase()
-    ) {
-
-      foundRow =
-        row + 1;
-
-      break;
-
-    }
-
-  }
-
-  if (foundRow === -1) {
-
-    throw new Error(
-      'Existing value not found: ' +
-      oldText
-    );
-
-  }
-
-  /*
-   * Prevent duplicate after editing.
-   */
-
-  for (
-    let row = 1;
-    row < values.length;
-    row++
-  ) {
-
-    if (
-      row + 1 === foundRow
-    ) {
-      continue;
-    }
-
-    const existing =
-      String(
-        values[row][column] || ''
-      ).trim();
-
-    if (
-      existing.toLowerCase() ===
-      newText.toLowerCase()
-    ) {
-
-      throw new Error(
-        '"' + newText +
-        '" already exists.'
-      );
-
-    }
-
-  }
-
-  sheet
-    .getRange(
-      foundRow,
-      column + 1
-    )
-    .setValue(
-      newText
-    );
-
-  return true;
-}
-
-
-/*************************************************
- * DELETE SETTING VALUE
- *************************************************/
-
-function deleteSettingValue(
-  settingName,
-  value
-) {
-
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName('Settings');
-
-  if (!sheet) {
-    throw new Error('Settings sheet not found.');
-  }
-
-  const cleanName =
-    String(settingName || '').trim();
-
-  const cleanValue =
-    String(value || '').trim();
-
-  const values =
-    sheet.getDataRange().getValues();
-
-  const headers =
-    values[0].map(function (h) {
-      return String(h || '').trim();
-    });
-
-  const column =
-    headers.findIndex(function (header) {
-      return header.toLowerCase() ===
-        cleanName.toLowerCase();
-    });
-
-  if (column === -1) {
-    throw new Error(
-      'Setting column not found: ' + cleanName
-    );
-  }
-
-  for (
-    let row = 1;
-    row < values.length;
-    row++
-  ) {
-
-    const existing =
-      String(
-        values[row][column] || ''
-      ).trim();
-
-    if (
-      existing.toLowerCase() ===
-      cleanValue.toLowerCase()
-    ) {
-
-      /*
-       * Clear only this cell.
-       * Do NOT delete the entire row because
-       * other Settings columns may contain data.
-       */
-
-      sheet
-        .getRange(
-          row + 1,
-          column + 1
-        )
-        .clearContent();
-
-      return true;
-
-    }
-
-  }
-
-  throw new Error(
-    'Value not found: ' + cleanValue
-  );
-
-}
-
-/*************************************************
- * UPDATE INDUSTRIAL HUB / AREA
- *************************************************/
-
-function updateAreaRecord(
-  rowNumber,
-  data
-) {
-
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName(
-      AREAS_SHEET
-    );
-
-  if (!sheet) {
-
-    throw new Error(
-      'Areas sheet not found.'
-    );
-
-  }
-
-  const row =
-    Number(rowNumber);
 
   if (
-    !row ||
-    row < 2 ||
-    row > sheet.getLastRow()
+    column !== -1
   ) {
 
-    throw new Error(
-      'Invalid Areas sheet row.'
-    );
+    row[column] =
+      value || '';
 
   }
-
-  if (!data) {
-
-    throw new Error(
-      'Area data is required.'
-    );
-
-  }
-
-  const values =
-    sheet
-      .getDataRange()
-      .getValues();
-
-  const headers =
-    values[0].map(
-      normalizeHeader
-    );
-
-
-  const fields = {
-
-    'industrial area':
-      data.industrialArea,
-
-    'industrial hub':
-      data.industrialHub,
-
-    'city':
-      data.city,
-
-    'latitude':
-      data.latitude,
-
-    'longitude':
-      data.longitude
-
-  };
-
-
-  Object.keys(fields)
-    .forEach(function(header) {
-
-      const column =
-        headers.indexOf(
-          header
-        );
-
-      if (
-        column === -1
-      ) {
-
-        return;
-
-      }
-
-      let value =
-        fields[header];
-
-      /*
-       * Store coordinates as numbers.
-       */
-
-      if (
-        header === 'latitude' ||
-        header === 'longitude'
-      ) {
-
-        value =
-          Number(value);
-
-        if (
-          isNaN(value)
-        ) {
-
-          throw new Error(
-            'Invalid ' +
-            header +
-            '.'
-          );
-
-        }
-
-      }
-
-      sheet
-        .getRange(
-          row,
-          column + 1
-        )
-        .setValue(
-          value
-        );
-
-    });
-
-
-  return true;
-
-}
-
-/*************************************************
- * GET TOTAL CUSTOMER COUNT
- *************************************************/
-
-function getTotalCustomerCount() {
-
-  const ss =
-    SpreadsheetApp.getActiveSpreadsheet();
-
-  const sheet =
-    ss.getSheetByName(
-      CUSTOMERS_SHEET
-    );
-
-  if (!sheet) {
-
-    throw new Error(
-      'Customers sheet not found.'
-    );
-
-  }
-
-  const lastRow =
-    sheet.getLastRow();
-
-  /*
-   * Row 1 is the header.
-   */
-
-  return Math.max(
-    0,
-    lastRow - 1
-  );
 
 }
