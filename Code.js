@@ -3947,3 +3947,94 @@ function setRowField(
   }
 
 }
+
+/*************************************************
+ * GET CUSTOMER COUNTS BY INDUSTRIAL AREA
+ *************************************************/
+
+function getCustomerCountsByArea() {
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+  const sheet =
+    ss.getSheetByName(
+      CUSTOMERS_SHEET
+    );
+
+  if (!sheet) {
+
+    throw new Error(
+      'Customers sheet not found.'
+    );
+
+  }
+
+  const values =
+    sheet
+      .getDataRange()
+      .getDisplayValues();
+
+  if (
+    values.length < 2
+  ) {
+
+    return {};
+
+  }
+
+  const headers =
+    values[0].map(
+      normalizeHeader
+    );
+
+  const areaIndex =
+    findHeader(
+      headers,
+      [
+        'industrial area'
+      ]
+    );
+
+  if (
+    areaIndex === -1
+  ) {
+
+    throw new Error(
+      'Customers sheet must contain Industrial Area column.'
+    );
+
+  }
+
+  const counts = {};
+
+  for (
+    let i = 1;
+    i < values.length;
+    i++
+  ) {
+
+    const area =
+      String(
+        values[i][areaIndex] || ''
+      )
+      .trim();
+
+    if (!area) {
+
+      continue;
+
+    }
+
+    const key =
+      area.toLowerCase();
+
+    counts[key] =
+      (counts[key] || 0) + 1;
+
+  }
+
+  return counts;
+
+}

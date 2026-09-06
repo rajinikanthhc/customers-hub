@@ -30,6 +30,12 @@ let activeCustomer = null;
 
 let settingsOptions = null;
 
+let longPressTimer = null;
+let longPressStartPoint = null;
+let longPressActive = false;
+let longPressInfoWindow = null;
+let longPressMarker = null;
+
 
 /*************************************************
  * START APPLICATION
@@ -486,11 +492,999 @@ function initializeMap() {
       }
     );
 
-
+  setupMapLongPress();
   loadAreas();
 
 }
 
+
+/*************************************************
+ * CANCEL LONG PRESS
+ *************************************************/
+
+function cancelMapLongPress() {
+
+  clearTimeout(
+    longPressTimer
+  );
+
+
+  longPressTimer =
+    null;
+
+
+  longPressStartPoint =
+    null;
+
+
+  longPressActive =
+    false;
+
+}
+
+/*************************************************
+ * MAP LONG PRESS
+ *
+ * Long press anywhere on the Google map.
+ * Uses Google's actual map event LatLng.
+ *************************************************/
+
+function setupMapLongPress() {
+
+  if (!map) {
+    return;
+  }
+
+
+  /*
+   * Prevent duplicate listeners.
+   */
+
+  if (map.__longPressReady) {
+    return;
+  }
+
+  map.__longPressReady = true;
+
+
+  /*
+   * ---------------------------------------------
+   * MOUSE DOWN
+   * ---------------------------------------------
+   */
+
+  map.addListener(
+    'mousedown',
+    function(event) {
+
+      if (!event.latLng) {
+        return;
+      }
+
+
+      /*
+       * Cancel any previous timer.
+       */
+
+      clearTimeout(
+        longPressTimer
+      );
+
+
+      longPressActive =
+        false;
+
+
+      /*
+       * IMPORTANT:
+       *
+       * Google Maps itself gives us the exact
+       * latitude/longitude at the pressed point.
+       *
+       * No pixel calculation.
+       */
+
+      const selectedLatLng =
+        event.latLng;
+
+
+      /*
+       * Wait 900 ms.
+       */
+
+      longPressTimer =
+        setTimeout(
+          function() {
+
+            longPressActive =
+              true;
+
+
+            showRealLocationDetails(
+              selectedLatLng
+            );
+
+          },
+          900
+        );
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------
+   * DRAG START
+   *
+   * If user starts moving the map,
+   * this is not a long press.
+   * ---------------------------------------------
+   */
+
+  map.addListener(
+    'dragstart',
+    function() {
+
+      clearTimeout(
+        longPressTimer
+      );
+
+
+      longPressTimer =
+        null;
+
+
+      longPressActive =
+        false;
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------
+   * MOUSE UP
+   * ---------------------------------------------
+   */
+
+  map.addListener(
+    'mouseup',
+    function() {
+
+      clearTimeout(
+        longPressTimer
+      );
+
+
+      longPressTimer =
+        null;
+
+    }
+  );
+
+}
+
+/*************************************************
+ * SHOW REAL GOOGLE LOCATION
+ *************************************************/
+
+async function showRealLocationDetails(latLng) {
+
+  if (!latLng || !map) {
+    return;
+  }
+
+  const latitude = Number(latLng.lat());
+  const longitude = Number(latLng.lng());
+
+  /*
+   * Remove previous marker
+   */
+
+  if (longPressMarker) {
+    longPressMarker.setMap(null);
+  }
+
+  /*
+   * Create marker
+   */
+
+  longPressMarker =
+    new google.maps.Marker({
+      position: latLng,
+      map: map,
+      title: 'Selected Location',
+      zIndex: 100000
+    });
+
+  /*
+   * Close previous info window
+   */
+
+  if (longPressInfoWindow) {
+    longPressInfoWindow.close();
+  }
+
+  /*
+   * Show loading popup
+   */
+
+  longPressInfoWindow =
+    new google.maps.InfoWindow({
+      content:
+        '<div style="' +
+          'font-family:Arial,sans-serif;' +
+          'min-width:260px;' +
+          'padding:5px;' +
+        '">' +
+
+          '<div style="' +
+            'font-size:15px;' +
+            'font-weight:700;' +
+            'margin-bottom:8px;' +
+          '">' +
+
+            '📍 Location Details' +
+
+          '</div>' +
+
+          '<div style="' +
+            'font-size:12px;' +
+            'color:#666;' +
+          '">' +
+
+            'Finding Google Maps address...' +
+
+          '</div>' +
+
+        '</div>'
+    });
+
+  longPressInfoWindow.setPosition(latLng);
+
+  longPressInfoWindow.open(map);
+
+
+  /*
+   * LOAD GEOCODING LIBRARY
+   */
+
+  let geocoding;
+
+  try {
+
+    geocoding =
+      await google.maps.importLibrary(
+        'geocoding'
+      );
+
+  } catch (error) {
+
+    console.error(
+      'Geocoding library error:',
+      error
+    );
+
+    showReverseGeocodeError(
+      latitude,
+      longitude,
+      'Unable to load Google Geocoding API. ' +
+      (error && error.message
+        ? error.message
+        : '')
+    );
+
+    return;
+  }
+
+
+  const Geocoder =
+    geocoding.Geocoder;
+
+
+  if (!Geocoder) {
+
+    showReverseGeocodeError(
+      latitude,
+      longitude,
+      'Google Geocoder is unavailable.'
+    );
+
+    return;
+  }
+
+
+  const geocoder =
+    new Geocoder();
+
+
+  /*
+   * REVERSE GEOCODING
+   */
+
+  try {
+
+    const response =
+      await geocoder.geocode({
+
+        location: latLng,
+
+        language: 'en',
+
+        region: 'IN'
+
+      });
+
+
+    console.log(
+      'Google Geocoder response:',
+      response
+    );
+
+
+    const results =
+      response.results || [];
+
+
+    if (!results.length) {
+
+      showReverseGeocodeError(
+        latitude,
+        longitude,
+        'Google returned ZERO_RESULTS for this location.'
+      );
+
+      return;
+    }
+
+
+    /*
+     * Google's best result
+     */
+
+    const result =
+      results[0];
+
+
+    console.log(
+      'Google address:',
+      result.formatted_address
+    );
+
+
+    const details =
+      extractGoogleAddressDetails(
+        result
+      );
+
+
+    const content =
+      buildLocationDetailsHtml(
+        result,
+        details,
+        latitude,
+        longitude
+      );
+
+
+    longPressInfoWindow.setContent(
+      content
+    );
+
+    longPressInfoWindow.setPosition(
+      latLng
+    );
+
+    longPressInfoWindow.open(
+      map
+    );
+
+
+  } catch (error) {
+
+    console.error(
+      'Google reverse geocoding error:',
+      error
+    );
+
+
+    let errorMessage =
+      'Google reverse geocoding failed.';
+
+
+    if (
+      error &&
+      error.message
+    ) {
+
+      errorMessage =
+        error.message;
+
+    }
+
+
+    showReverseGeocodeError(
+      latitude,
+      longitude,
+      errorMessage
+    );
+
+  }
+
+}
+
+
+/*************************************************
+ * REVERSE GEOCODING ERROR
+ *************************************************/
+
+function showReverseGeocodeError(
+  latitude,
+  longitude,
+  message
+) {
+
+  if (!longPressInfoWindow) {
+    return;
+  }
+
+
+  longPressInfoWindow.setContent(
+
+    '<div style="' +
+
+      'font-family:Arial,sans-serif;' +
+
+      'min-width:280px;' +
+
+      'max-width:340px;' +
+
+      'padding:5px;' +
+
+    '">' +
+
+
+      '<div style="' +
+
+        'font-size:15px;' +
+
+        'font-weight:700;' +
+
+        'margin-bottom:8px;' +
+
+      '">' +
+
+        '📍 Selected Location' +
+
+      '</div>' +
+
+
+      locationInfoRow(
+        'Latitude',
+        latitude.toFixed(6)
+      ) +
+
+
+      locationInfoRow(
+        'Longitude',
+        longitude.toFixed(6)
+      ) +
+
+
+      '<div style="' +
+
+        'font-size:12px;' +
+
+        'color:#dc3545;' +
+
+        'margin-top:10px;' +
+
+        'line-height:1.5;' +
+
+      '">' +
+
+        '<strong>Google Geocoder:</strong><br>' +
+
+        escapeHtml(
+          message ||
+          'Unknown geocoding error.'
+        ) +
+
+      '</div>' +
+
+
+    '</div>'
+
+  );
+
+
+  longPressInfoWindow.setPosition({
+
+    lat: latitude,
+
+    lng: longitude
+
+  });
+
+
+  longPressInfoWindow.open(
+    map
+  );
+
+}
+
+/*************************************************
+ * EXTRACT GOOGLE ADDRESS DETAILS
+ *************************************************/
+
+function extractGoogleAddressDetails(
+  result
+) {
+
+  const details = {
+
+    area:
+      '',
+
+    neighborhood:
+      '',
+
+    city:
+      '',
+
+    district:
+      '',
+
+    state:
+      '',
+
+    postalCode:
+      '',
+
+    country:
+      ''
+
+  };
+
+
+  const components =
+    result.address_components ||
+    [];
+
+
+  components.forEach(
+    function(component) {
+
+      const types =
+        component.types ||
+        [];
+
+
+      /*
+       * AREA
+       */
+
+      if (
+        !details.area &&
+        (
+          types.indexOf(
+            'sublocality_level_2'
+          ) !== -1 ||
+
+          types.indexOf(
+            'sublocality_level_3'
+          ) !== -1
+        )
+      ) {
+
+        details.area =
+          component.long_name;
+
+      }
+
+
+      /*
+       * NEIGHBORHOOD
+       */
+
+      if (
+        !details.neighborhood &&
+        (
+          types.indexOf(
+            'neighborhood'
+          ) !== -1 ||
+
+          types.indexOf(
+            'sublocality_level_1'
+          ) !== -1
+        )
+      ) {
+
+        details.neighborhood =
+          component.long_name;
+
+      }
+
+
+      /*
+       * CITY
+       */
+
+      if (
+        !details.city &&
+        types.indexOf(
+          'locality'
+        ) !== -1
+      ) {
+
+        details.city =
+          component.long_name;
+
+      }
+
+
+      /*
+       * If locality is not available,
+       * use administrative district.
+       */
+
+      if (
+        !details.city &&
+        types.indexOf(
+          'administrative_area_level_2'
+        ) !== -1
+      ) {
+
+        details.city =
+          component.long_name;
+
+      }
+
+
+      /*
+       * DISTRICT
+       */
+
+      if (
+        !details.district &&
+        types.indexOf(
+          'administrative_area_level_2'
+        ) !== -1
+      ) {
+
+        details.district =
+          component.long_name;
+
+      }
+
+
+      /*
+       * STATE
+       */
+
+      if (
+        !details.state &&
+        types.indexOf(
+          'administrative_area_level_1'
+        ) !== -1
+      ) {
+
+        details.state =
+          component.long_name;
+
+      }
+
+
+      /*
+       * PIN CODE
+       */
+
+      if (
+        !details.postalCode &&
+        types.indexOf(
+          'postal_code'
+        ) !== -1
+      ) {
+
+        details.postalCode =
+          component.long_name;
+
+      }
+
+
+      /*
+       * COUNTRY
+       */
+
+      if (
+        !details.country &&
+        types.indexOf(
+          'country'
+        ) !== -1
+      ) {
+
+        details.country =
+          component.long_name;
+
+      }
+
+    }
+  );
+
+
+  return details;
+
+}
+
+/*************************************************
+ * BUILD LOCATION DETAILS POPUP
+ *************************************************/
+
+function buildLocationDetailsHtml(
+  result,
+  details,
+  latitude,
+  longitude
+) {
+
+  let html = '';
+
+
+  html +=
+
+    '<div style="' +
+
+      'font-family:Arial,sans-serif;' +
+
+      'min-width:260px;' +
+
+      'max-width:320px;' +
+
+      'padding:4px;' +
+
+    '">' +
+
+
+      '<div style="' +
+
+        'font-size:16px;' +
+
+        'font-weight:700;' +
+
+        'margin-bottom:8px;' +
+
+      '">' +
+
+        '📍 Location Details' +
+
+      '</div>';
+
+
+  /*
+   * Google's actual formatted address.
+   */
+
+  if (
+    result.formatted_address
+  ) {
+
+    html +=
+
+      '<div style="' +
+
+        'font-size:13px;' +
+
+        'font-weight:600;' +
+
+        'line-height:1.4;' +
+
+        'margin-bottom:10px;' +
+
+      '">' +
+
+        escapeHtml(
+          result.formatted_address
+        ) +
+
+      '</div>';
+
+  }
+
+
+  /*
+   * Area / locality.
+   */
+
+  if (
+    details.area
+  ) {
+
+    html += locationInfoRow(
+      'Area',
+      details.area
+    );
+
+  }
+
+
+  if (
+    details.neighborhood
+  ) {
+
+    html += locationInfoRow(
+      'Neighborhood',
+      details.neighborhood
+    );
+
+  }
+
+
+  if (
+    details.city
+  ) {
+
+    html += locationInfoRow(
+      'City',
+      details.city
+    );
+
+  }
+
+
+  if (
+    details.district
+  ) {
+
+    html += locationInfoRow(
+      'District',
+      details.district
+    );
+
+  }
+
+
+  if (
+    details.state
+  ) {
+
+    html += locationInfoRow(
+      'State',
+      details.state
+    );
+
+  }
+
+
+  if (
+    details.postalCode
+  ) {
+
+    html += locationInfoRow(
+      'PIN',
+      details.postalCode
+    );
+
+  }
+
+
+  if (
+    details.country
+  ) {
+
+    html += locationInfoRow(
+      'Country',
+      details.country
+    );
+
+  }
+
+
+  /*
+   * Exact coordinates.
+   */
+
+  html +=
+
+    '<div style="' +
+
+      'margin-top:10px;' +
+
+      'padding-top:8px;' +
+
+      'border-top:1px solid #eee;' +
+
+    '">' +
+
+      locationInfoRow(
+        'Latitude',
+        latitude.toFixed(6)
+      ) +
+
+      locationInfoRow(
+        'Longitude',
+        longitude.toFixed(6)
+      ) +
+
+    '</div>';
+
+
+  html +=
+
+      '<div style="' +
+
+        'font-size:10px;' +
+
+        'color:#888;' +
+
+        'margin-top:7px;' +
+
+      '">' +
+
+        'Location information from Google Maps' +
+
+      '</div>' +
+
+
+    '</div>';
+
+
+  return html;
+
+}
+
+
+/*************************************************
+ * LOCATION INFO ROW
+ *************************************************/
+
+function locationInfoRow(
+  label,
+  value
+) {
+
+  return (
+
+    '<div style="' +
+
+      'display:flex;' +
+
+      'gap:8px;' +
+
+      'font-size:12px;' +
+
+      'line-height:1.5;' +
+
+      'margin:2px 0;' +
+
+    '">' +
+
+      '<span style="' +
+
+        'font-weight:600;' +
+
+        'min-width:82px;' +
+
+      '">' +
+
+        escapeHtml(
+          label
+        ) +
+
+      ':</span>' +
+
+      '<span>' +
+
+        escapeHtml(
+          value || '-'
+        ) +
+
+      '</span>' +
+
+    '</div>'
+
+  );
+
+}
 
 /*************************************************
  * LOAD INDUSTRIAL AREAS
@@ -525,11 +1519,40 @@ function loadAreas() {
         }
 
 
-        renderAreaMarkers();
+        google.script.run
 
-        showLoading(false);
+          .withSuccessHandler(
+            function(customerCounts) {
 
-        showUserLocation();
+              window.customerCountsByArea =
+                customerCounts || {};
+
+              renderAreaMarkers();
+
+              showLoading(false);
+
+            }
+          )
+
+          .withFailureHandler(
+            function(error) {
+
+              console.log(
+                'Customer count error:',
+                error
+              );
+
+              window.customerCountsByArea =
+                {};
+
+              renderAreaMarkers();
+
+              showLoading(false);
+
+            }
+          )
+
+          .getCustomerCountsByArea();
 
       }
     )
@@ -549,7 +1572,6 @@ function loadAreas() {
     .getIndustrialAreas();
 
 }
-
 
 /*************************************************
  * RENDER AREA MARKERS
@@ -599,13 +1621,27 @@ function renderAreaMarkers() {
           area.industrialArea || ''
         );
 
+        const customerCount =
+  (
+    window.customerCountsByArea || {}
+  )[
+    name
+      .trim()
+      .toLowerCase()
+  ] || 0;
+
+const labelText =
+  name +
+  ' (' +
+  customerCount +
+  ')';
 
       const textWidth =
         Math.max(
           45,
           Math.min(
             170,
-            name.length * 7 + 12
+            labelText.length * 7 + 12
           )
         );
 
@@ -682,10 +1718,9 @@ function renderAreaMarkers() {
           label: {
 
             text:
-              name,
-
+  labelText,
             color:
-              '#202124',
+              '#FF0000',
 
             fontFamily:
               'Roboto, Arial, sans-serif',
