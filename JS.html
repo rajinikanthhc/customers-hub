@@ -1728,22 +1728,6 @@ const labelText =
     }
   );
 
-
-  map.setCenter({
-
-    lat:
-      12.9716,
-
-    lng:
-      77.5946
-
-  });
-
-
-  map.setZoom(
-    11
-  );
-
 }
 
 /*************************************************
@@ -3415,18 +3399,21 @@ function saveArea() {
         }
 
 
-        renderAreaMarkers();
-
-
         /*
-         * Refresh the customer list
-         * using the new area name.
-         */
+ * Keep the current map view while
+ * refreshing the area marker.
+ */
 
-        loadCustomersByArea(
-          activeArea.industrialArea
-        );
+renderAreaMarkers();
 
+/*
+ * Refresh the customer list
+ * using the new area name.
+ */
+
+loadCustomersByArea(
+  activeArea.industrialArea
+);
       }
     )
 
@@ -6556,22 +6543,63 @@ function resetHomeView() {
 
   if (map) {
 
-    map.panTo({
+  /*
+   * Remove long-press location
+   */
 
-      lat:
-        12.9716,
+  if (longPressMarker) {
 
-      lng:
-        77.5946
+    longPressMarker.setMap(null);
 
-    });
-
-
-    map.setZoom(
-      11
-    );
+    longPressMarker = null;
 
   }
+
+
+  if (longPressInfoWindow) {
+
+    longPressInfoWindow.close();
+
+    longPressInfoWindow = null;
+
+  }
+
+
+  /*
+   * Go to current GPS location
+   * if GPS marker is already available.
+   */
+
+  if (userLocationMarker) {
+
+    const gpsPosition =
+      userLocationMarker.getPosition();
+
+    if (gpsPosition) {
+
+      map.panTo(
+        gpsPosition
+      );
+
+      map.setZoom(
+        13
+      );
+
+      return;
+
+    }
+
+  }
+
+
+  /*
+   * GPS marker isn't available yet.
+   * Request the current GPS location.
+   */
+
+  showUserLocation();
+
+}
 
 
   restoreUniversalSearch();
