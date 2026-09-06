@@ -35,6 +35,7 @@ let longPressStartPoint = null;
 let longPressActive = false;
 let longPressInfoWindow = null;
 let longPressMarker = null;
+let ignoreNextMapClick = false;
 
 
 /*************************************************
@@ -531,136 +532,98 @@ function cancelMapLongPress() {
 
 function setupMapLongPress() {
 
-  if (!map) {
-    return;
-  }
+  if (!map) return;
 
-
-  /*
-   * Prevent duplicate listeners.
-   */
-
-  if (map.__longPressReady) {
-    return;
-  }
+  if (map.__longPressReady) return;
 
   map.__longPressReady = true;
 
 
-  /*
-   * ---------------------------------------------
-   * MOUSE DOWN
-   * ---------------------------------------------
-   */
+  map.addListener('mousedown', function(event) {
 
-  map.addListener(
-    'mousedown',
-    function(event) {
+    if (!event.latLng) return;
 
-      if (!event.latLng) {
-        return;
-      }
+    clearTimeout(longPressTimer);
+
+    longPressActive = false;
+
+    const selectedLatLng =
+      event.latLng;
 
 
-      /*
-       * Cancel any previous timer.
-       */
+    longPressTimer =
+      setTimeout(function() {
 
-      clearTimeout(
-        longPressTimer
-      );
+        longPressActive = true;
 
+        // Ignore the click event generated
+        // immediately after the long press.
+        ignoreNextMapClick = true;
 
-      longPressActive =
-        false;
-
-
-      /*
-       * IMPORTANT:
-       *
-       * Google Maps itself gives us the exact
-       * latitude/longitude at the pressed point.
-       *
-       * No pixel calculation.
-       */
-
-      const selectedLatLng =
-        event.latLng;
-
-
-      /*
-       * Wait 900 ms.
-       */
-
-      longPressTimer =
-        setTimeout(
-          function() {
-
-            longPressActive =
-              true;
-
-
-            showRealLocationDetails(
-              selectedLatLng
-            );
-
-          },
-          900
+        showRealLocationDetails(
+          selectedLatLng
         );
 
-    }
-  );
+      }, 900);
+
+  });
 
 
-  /*
-   * ---------------------------------------------
-   * DRAG START
-   *
-   * If user starts moving the map,
-   * this is not a long press.
-   * ---------------------------------------------
-   */
+  map.addListener('dragstart', function() {
 
-  map.addListener(
-    'dragstart',
-    function() {
+    clearTimeout(longPressTimer);
 
-      clearTimeout(
-        longPressTimer
-      );
+    longPressTimer = null;
+
+    longPressActive = false;
+
+  });
 
 
-      longPressTimer =
-        null;
+  map.addListener('mouseup', function() {
+
+    clearTimeout(longPressTimer);
+
+    longPressTimer = null;
+
+  });
 
 
-      longPressActive =
-        false;
+  // -----------------------------------------
+  // REMOVE LONG-PRESS MARKER WHEN MAP IS CLICKED
+  // -----------------------------------------
 
-    }
-  );
+  map.addListener('click', function() {
 
+    // The long press itself can generate a click
+    // event immediately afterwards. Ignore that one.
+    if (ignoreNextMapClick) {
 
-  /*
-   * ---------------------------------------------
-   * MOUSE UP
-   * ---------------------------------------------
-   */
+      ignoreNextMapClick = false;
 
-  map.addListener(
-    'mouseup',
-    function() {
-
-      clearTimeout(
-        longPressTimer
-      );
-
-
-      longPressTimer =
-        null;
+      return;
 
     }
-  );
+
+
+    if (longPressMarker) {
+
+      longPressMarker.setMap(null);
+
+      longPressMarker = null;
+
+    }
+
+
+    if (longPressInfoWindow) {
+
+      longPressInfoWindow.close();
+
+      longPressInfoWindow = null;
+
+    }
+
+  });
 
 }
 
@@ -1522,35 +1485,41 @@ function loadAreas() {
         google.script.run
 
           .withSuccessHandler(
-            function(customerCounts) {
+  function(customerCounts) {
 
-              window.customerCountsByArea =
-                customerCounts || {};
+    window.customerCountsByArea =
+      customerCounts || {};
 
-              renderAreaMarkers();
+    renderAreaMarkers();
 
-              showLoading(false);
+    showLoading(false);
 
-            }
-          )
+    // Show current GPS location
+    showUserLocation();
+
+  }
+)
 
           .withFailureHandler(
-            function(error) {
+  function(error) {
 
-              console.log(
-                'Customer count error:',
-                error
-              );
+    console.log(
+      'Customer count error:',
+      error
+    );
 
-              window.customerCountsByArea =
-                {};
+    window.customerCountsByArea =
+      {};
 
-              renderAreaMarkers();
+    renderAreaMarkers();
 
-              showLoading(false);
+    showLoading(false);
 
-            }
-          )
+    // Show current GPS location
+    showUserLocation();
+
+  }
+)
 
           .getCustomerCountsByArea();
 
