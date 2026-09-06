@@ -1544,6 +1544,9 @@ function loadAreas() {
 
 /*************************************************
  * RENDER AREA MARKERS
+ *
+ * Red dot = exact Latitude / Longitude
+ * Area name appears immediately to the right.
  *************************************************/
 
 function renderAreaMarkers() {
@@ -1570,17 +1573,38 @@ function renderAreaMarkers() {
   areas.forEach(
     function(area, index) {
 
+      /*
+       * EXACT DATABASE COORDINATES
+       */
+
+      const latitude =
+        Number(
+          area.latitude
+        );
+
+      const longitude =
+        Number(
+          area.longitude
+        );
+
+
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude)
+      ) {
+
+        return;
+
+      }
+
+
       const position = {
 
         lat:
-          Number(
-            area.latitude
-          ),
+          latitude,
 
         lng:
-          Number(
-            area.longitude
-          )
+          longitude
 
       };
 
@@ -1588,29 +1612,40 @@ function renderAreaMarkers() {
       const name =
         String(
           area.industrialArea || ''
-        );
+        ).trim();
 
-        const customerCount =
-  (
-    window.customerCountsByArea || {}
-  )[
-    name
-      .trim()
-      .toLowerCase()
-  ] || 0;
 
-const labelText =
-  name +
-  ' (' +
-  customerCount +
-  ')';
+      const customerCount =
+        (
+          window.customerCountsByArea || {}
+        )[
+          name
+            .trim()
+            .toLowerCase()
+        ] || 0;
+
+
+      /*
+       * Text shown to the RIGHT of the dot.
+       */
+
+      const labelText =
+        name +
+        ' (' +
+        customerCount +
+        ')';
+
+
+      /*
+       * Calculate SVG width.
+       */
 
       const textWidth =
         Math.max(
-          45,
+          80,
           Math.min(
-            170,
-            labelText.length * 7 + 12
+            260,
+            labelText.length * 7 + 22
           )
         );
 
@@ -1620,8 +1655,18 @@ const labelText =
 
 
       /*
-       * Transparent clickable area.
-       * Only area text is visible.
+       * IMPORTANT:
+       *
+       * The red circle is at x=6.
+       *
+       * The marker anchor is also x=6.
+       *
+       * Therefore Google's exact
+       * latitude/longitude is placed
+       * directly on the red dot.
+       *
+       * The name starts at x=16,
+       * immediately to the RIGHT of the dot.
        */
 
       const svg =
@@ -1631,24 +1676,45 @@ const labelText =
         '" ' +
         'height="' +
           textHeight +
+        '" ' +
+        'viewBox="0 0 ' +
+          textWidth +
+        ' ' +
+          textHeight +
         '">' +
 
-          '<rect ' +
-            'x="0" ' +
-            'y="0" ' +
-            'width="' +
-              textWidth +
-            '" ' +
-            'height="' +
-              textHeight +
-            '" ' +
-            'fill="white" ' +
-            'fill-opacity="0.01"/>' +
+          /*
+           * EXACT LOCATION DOT
+           */
+
+          '<circle ' +
+            'cx="6" ' +
+            'cy="12" ' +
+            'r="4" ' +
+            'fill="#FF0000"/>' +
+
+          /*
+           * AREA NAME
+           */
+
+          '<text ' +
+            'x="16" ' +
+            'y="16" ' +
+            'font-family="Roboto, Arial, sans-serif" ' +
+            'font-size="12px" ' +
+            'font-weight="500" ' +
+            'fill="#FF0000">' +
+
+            escapeHtml(
+              labelText
+            ) +
+
+          '</text>' +
 
         '</svg>';
 
 
-      const transparentIcon = {
+      const areaIcon = {
 
         url:
           'data:image/svg+xml;charset=UTF-8,' +
@@ -1660,10 +1726,14 @@ const labelText =
             textHeight
           ),
 
+        /*
+         * EXACTLY ON THE RED DOT
+         */
+
         anchor:
           new google.maps.Point(
-            textWidth / 2,
-            textHeight / 2
+            6,
+            12
           )
 
       };
@@ -1682,25 +1752,7 @@ const labelText =
             name,
 
           icon:
-            transparentIcon,
-
-          label: {
-
-            text:
-  labelText,
-            color:
-              '#FF0000',
-
-            fontFamily:
-              'Roboto, Arial, sans-serif',
-
-            fontSize:
-              '12px',
-
-            fontWeight:
-              '500'
-
-          },
+            areaIcon,
 
           clickable:
             true,
