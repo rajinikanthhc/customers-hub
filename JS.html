@@ -12,6 +12,12 @@ let customers = [];
 
 let markers = [];
 
+let userLocationMarker = null;
+
+let locationPickerListener = null;
+let locationPickerMarker = null;
+let locationPickerActive = false;
+
 let allCustomers = [];
 
 let customerListMode = 'area';
@@ -276,10 +282,11 @@ function loadGoogleMaps(
 
 
   script.src =
-    'https://maps.googleapis.com/maps/api/js' +
-    '?key=' +
-    encodeURIComponent(apiKey) +
-    '&callback=initCustomersHubMap';
+  'https://maps.googleapis.com/maps/api/js' +
+  '?key=' +
+  encodeURIComponent(apiKey) +
+  '&libraries=places' +
+  '&callback=initCustomersHubMap';
 
 
   script.async = true;
@@ -522,6 +529,8 @@ function loadAreas() {
 
         showLoading(false);
 
+        showUserLocation();
+
       }
     )
 
@@ -733,6 +742,188 @@ function renderAreaMarkers() {
 
 }
 
+/*************************************************
+ * SHOW USER GPS LOCATION
+ *************************************************/
+
+function showUserLocation() {
+
+  if (
+    !navigator.geolocation
+  ) {
+
+    console.log(
+      'GPS location is not supported by this browser.'
+    );
+
+    return;
+
+  }
+
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position) {
+
+      const latitude =
+        position.coords.latitude;
+
+      const longitude =
+        position.coords.longitude;
+
+
+      const userPosition = {
+
+        lat:
+          latitude,
+
+        lng:
+          longitude
+
+      };
+
+
+      /*
+       * Remove previous user marker
+       */
+
+      if (userLocationMarker) {
+
+        userLocationMarker.setMap(
+          null
+        );
+
+      }
+
+
+      /*
+       * Blue GPS dot
+       */
+
+      const svg =
+
+        '<svg xmlns="http://www.w3.org/2000/svg" ' +
+
+          'width="32" height="32">' +
+
+          '<circle ' +
+
+            'cx="16" ' +
+
+            'cy="16" ' +
+
+            'r="9" ' +
+
+            'fill="#4285F4" ' +
+
+            'stroke="white" ' +
+
+            'stroke-width="3"/>' +
+
+          '<circle ' +
+
+            'cx="16" ' +
+
+            'cy="16" ' +
+
+            'r="3" ' +
+
+            'fill="white"/>' +
+
+        '</svg>';
+
+
+      userLocationMarker =
+        new google.maps.Marker({
+
+          position:
+            userPosition,
+
+          map:
+            map,
+
+          title:
+            'My Location',
+
+          icon: {
+
+            url:
+              'data:image/svg+xml;charset=UTF-8,' +
+              encodeURIComponent(svg),
+
+            scaledSize:
+              new google.maps.Size(
+                32,
+                32
+              ),
+
+            anchor:
+              new google.maps.Point(
+                16,
+                16
+              )
+
+          },
+
+          zIndex:
+            99999
+
+        });
+
+
+      /*
+       * Center map on current GPS location
+       */
+
+      map.panTo(
+        userPosition
+      );
+
+      map.setZoom(
+        13
+      );
+
+
+      console.log(
+        'GPS location:',
+        latitude,
+        longitude
+      );
+
+    },
+
+    function(error) {
+
+      /*
+       * GPS permission denied,
+       * unavailable or timed out.
+       *
+       * Do not stop the application.
+       */
+
+      console.log(
+        'Unable to get GPS location:',
+        error.message
+      );
+
+    },
+
+    {
+
+      enableHighAccuracy:
+        true,
+
+      timeout:
+        15000,
+
+      maximumAge:
+        0
+
+    }
+
+  );
+
+}
 
 /*************************************************
  * SELECT INDUSTRIAL AREA
@@ -1026,6 +1217,10 @@ function openAreaEdit() {
   let html = '';
 
 
+  /*
+   * Industrial Area Google Search
+   */
+
   html +=
 
     '<div class="edit-field">' +
@@ -1042,10 +1237,16 @@ function openAreaEdit() {
             activeArea.industrialArea
           ) +
 
-        '">' +
+        '" ' +
+
+        'placeholder="Search Industrial Area">' +
 
     '</div>';
 
+
+  /*
+   * City
+   */
 
   html +=
 
@@ -1063,10 +1264,18 @@ function openAreaEdit() {
             activeArea.city
           ) +
 
-        '">' +
+        '" ' +
+
+        'readonly ' +
+
+        'style="background:#f7f7f7;">' +
 
     '</div>';
 
+
+  /*
+   * Latitude
+   */
 
   html +=
 
@@ -1093,6 +1302,10 @@ function openAreaEdit() {
     '</div>';
 
 
+  /*
+   * Longitude
+   */
+
   html +=
 
     '<div class="edit-field">' +
@@ -1118,6 +1331,29 @@ function openAreaEdit() {
     '</div>';
 
 
+  html +=
+
+    '<div ' +
+
+      'id="areaGoogleStatus" ' +
+
+      'style="' +
+
+        'font-size:12px;' +
+
+        'color:#666;' +
+
+        'margin-top:5px;' +
+
+      '"' +
+
+    '>' +
+
+      'Type and select a location from Google Maps.' +
+
+    '</div>';
+
+
   openEditModal(
 
     'Edit Industrial Area',
@@ -1128,8 +1364,847 @@ function openAreaEdit() {
 
   );
 
+
+  /*
+   * Initialize Google search
+   * after modal is created.
+   */
+
+  setTimeout(
+    function() {
+
+      setupAreaAutocomplete();
+
+    },
+    300
+  );
+
 }
 
+/*************************************************
+ * GOOGLE AREA AUTOCOMPLETE - NEW PLACES API
+ *************************************************/
+
+async function setupAreaAutocomplete() {
+
+  const input =
+    document.getElementById(
+      'editAreaName'
+    );
+
+  if (!input) {
+    return;
+  }
+
+
+  const status =
+    document.getElementById(
+      'areaGoogleStatus'
+    );
+
+
+  if (
+    !window.google ||
+    !google.maps
+  ) {
+
+    if (status) {
+
+      status.textContent =
+        'Google Maps is not available.';
+
+      status.style.color =
+        '#dc3545';
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+   * Load the NEW Places library.
+   */
+
+  let places;
+
+  try {
+
+    places =
+      await google.maps.importLibrary(
+        'places'
+      );
+
+  } catch (error) {
+
+    console.error(
+      'Places library error:',
+      error
+    );
+
+    if (status) {
+
+      status.textContent =
+        'Unable to load Google Places.';
+
+      status.style.color =
+        '#dc3545';
+
+    }
+
+    return;
+
+  }
+
+
+  const AutocompleteSuggestion =
+    places.AutocompleteSuggestion;
+
+  const AutocompleteSessionToken =
+    places.AutocompleteSessionToken;
+
+
+  if (
+    !AutocompleteSuggestion ||
+    !AutocompleteSessionToken
+  ) {
+
+    if (status) {
+
+      status.textContent =
+        'Google Places Autocomplete is unavailable.';
+
+      status.style.color =
+        '#dc3545';
+
+    }
+
+    return;
+
+  }
+
+
+  /*
+   * Create dropdown.
+   */
+
+  let dropdown =
+    document.getElementById(
+      'areaGoogleSuggestions'
+    );
+
+
+  if (dropdown) {
+
+    dropdown.remove();
+
+  }
+
+
+  dropdown =
+    document.createElement(
+      'div'
+    );
+
+
+  dropdown.id =
+    'areaGoogleSuggestions';
+
+
+  dropdown.style.cssText =
+
+    'position:absolute;' +
+    'left:0;' +
+    'right:0;' +
+    'top:100%;' +
+    'background:#fff;' +
+    'border:1px solid #ddd;' +
+    'border-top:0;' +
+    'border-radius:0 0 6px 6px;' +
+    'box-shadow:0 4px 12px rgba(0,0,0,.15);' +
+    'z-index:1000001;' +
+    'max-height:260px;' +
+    'overflow-y:auto;' +
+    'display:none;';
+
+
+  /*
+   * Put dropdown relative to input.
+   */
+
+  const parent =
+    input.parentElement;
+
+
+  if (parent) {
+
+    parent.style.position =
+      'relative';
+
+    parent.appendChild(
+      dropdown
+    );
+
+  }
+
+
+  /*
+   * New autocomplete session.
+   */
+
+  let sessionToken =
+    new AutocompleteSessionToken();
+
+
+  let requestId =
+    0;
+
+
+  /*
+   * Search while typing.
+   */
+
+  input.addEventListener(
+    'input',
+    async function() {
+
+      const query =
+        input.value.trim();
+
+
+      requestId++;
+
+      const currentRequestId =
+        requestId;
+
+
+      dropdown.innerHTML =
+        '';
+
+
+      dropdown.style.display =
+        'none';
+
+
+      if (!query) {
+
+        if (status) {
+
+          status.textContent =
+            'Type and select a location from Google Maps.';
+
+          status.style.color =
+            '#666';
+
+        }
+
+        return;
+
+      }
+
+
+      if (status) {
+
+        status.textContent =
+          'Searching Google Maps...';
+
+        status.style.color =
+          '#666';
+
+      }
+
+
+      try {
+
+        const request = {
+
+          input:
+            query,
+
+          includedRegionCodes:
+            ['in'],
+
+          language:
+            'en',
+
+          region:
+            'in',
+
+          sessionToken:
+            sessionToken,
+
+          locationBias: {
+
+            center: {
+
+              lat:
+                12.9716,
+
+              lng:
+                77.5946
+
+            },
+
+            radius:
+              50000
+
+          }
+
+        };
+
+
+        const result =
+          await AutocompleteSuggestion
+            .fetchAutocompleteSuggestions(
+              request
+            );
+
+
+        /*
+         * Ignore old search results.
+         */
+
+        if (
+          currentRequestId !==
+          requestId
+        ) {
+
+          return;
+
+        }
+
+
+        const suggestions =
+          result.suggestions ||
+          [];
+
+
+        dropdown.innerHTML =
+          '';
+
+
+        if (!suggestions.length) {
+
+          dropdown.style.display =
+            'none';
+
+
+          if (status) {
+
+            status.textContent =
+              'No Google Maps locations found.';
+
+          }
+
+          return;
+
+        }
+
+
+        /*
+         * Show suggestions.
+         */
+
+        suggestions.forEach(
+          function(suggestion) {
+
+            const prediction =
+              suggestion.placePrediction;
+
+
+            if (!prediction) {
+
+              return;
+
+            }
+
+
+            const button =
+              document.createElement(
+                'button'
+              );
+
+
+            button.type =
+              'button';
+
+
+            button.style.cssText =
+
+              'display:block;' +
+              'width:100%;' +
+              'padding:10px 12px;' +
+              'border:0;' +
+              'border-bottom:1px solid #eee;' +
+              'background:#fff;' +
+              'text-align:left;' +
+              'cursor:pointer;' +
+              'font-size:13px;' +
+              'color:#222;';
+
+
+            const mainText =
+              prediction.mainText
+                ? prediction.mainText.text
+                : prediction.text
+                    .toString();
+
+
+            const secondaryText =
+              prediction.secondaryText
+                ? prediction.secondaryText.text
+                : '';
+
+
+            button.innerHTML =
+
+              '<div style="' +
+                'font-weight:600;' +
+              '">' +
+
+                escapeHtml(
+                  mainText
+                ) +
+
+              '</div>' +
+
+              (
+                secondaryText
+
+                  ? '<div style="' +
+                      'font-size:11px;' +
+                      'color:#777;' +
+                      'margin-top:2px;' +
+                    '">' +
+
+                      escapeHtml(
+                        secondaryText
+                      ) +
+
+                    '</div>'
+
+                  : ''
+
+              );
+
+
+            button.addEventListener(
+              'mouseenter',
+              function() {
+
+                button.style.background =
+                  '#f5f5f5';
+
+              }
+            );
+
+
+            button.addEventListener(
+              'mouseleave',
+              function() {
+
+                button.style.background =
+                  '#fff';
+
+              }
+            );
+
+
+            button.addEventListener(
+              'mousedown',
+              function(event) {
+
+                /*
+                 * Prevent input blur
+                 * before click.
+                 */
+
+                event.preventDefault();
+
+              }
+            );
+
+
+            button.addEventListener(
+              'click',
+              async function() {
+
+                await selectGoogleAreaPlace(
+                  prediction,
+                  input,
+                  dropdown,
+                  status
+                );
+
+
+                /*
+                 * New session after
+                 * selection.
+                 */
+
+                sessionToken =
+                  new AutocompleteSessionToken();
+
+              }
+            );
+
+
+            dropdown.appendChild(
+              button
+            );
+
+          }
+        );
+
+
+        dropdown.style.display =
+          'block';
+
+
+        if (status) {
+
+          status.textContent =
+            'Select the correct Google Maps location.';
+
+          status.style.color =
+            '#666';
+
+        }
+
+      } catch (error) {
+  console.error('Google Places search error:', error);
+
+  dropdown.style.display = 'none';
+
+  let message = 'Google Places search failed.';
+
+  if (error && error.message) {
+    message += ' ' + error.message;
+  }
+
+  if (status) {
+    status.textContent = message;
+    status.style.color = '#dc3545';
+  }
+}
+
+    }
+  );
+
+
+  /*
+   * Hide dropdown when clicking elsewhere.
+   */
+
+  document.addEventListener(
+    'click',
+    function(event) {
+
+      if (
+        event.target !== input &&
+        !dropdown.contains(
+          event.target
+        )
+      ) {
+
+        dropdown.style.display =
+          'none';
+
+      }
+
+    }
+  );
+
+}
+
+
+/*************************************************
+ * SELECT GOOGLE AREA
+ *************************************************/
+
+async function selectGoogleAreaPlace(
+  prediction,
+  input,
+  dropdown,
+  status
+) {
+
+  if (!prediction) {
+
+    return;
+
+  }
+
+
+  try {
+
+    if (status) {
+
+      status.textContent =
+        'Loading Google Maps location...';
+
+      status.style.color =
+        '#666';
+
+    }
+
+
+    /*
+     * Convert prediction to Place.
+     */
+
+    const place =
+      prediction.toPlace();
+
+
+    /*
+     * Request only the fields
+     * we actually need.
+     */
+
+    await place.fetchFields({
+
+      fields: [
+
+        'displayName',
+
+        'formattedAddress',
+
+        'location',
+
+        'addressComponents'
+
+      ]
+
+    });
+
+
+    if (
+      !place.location
+    ) {
+
+      throw new Error(
+        'Google Maps did not return coordinates.'
+      );
+
+    }
+
+
+    /*
+     * --------------------------------------
+     * INDUSTRIAL AREA
+     * --------------------------------------
+     */
+
+    const areaInput =
+      document.getElementById(
+        'editAreaName'
+      );
+
+
+    if (areaInput) {
+
+      areaInput.value =
+        place.displayName ||
+        input.value;
+
+    }
+
+
+    /*
+     * --------------------------------------
+     * LATITUDE
+     * --------------------------------------
+     */
+
+    const latitudeInput =
+      document.getElementById(
+        'editAreaLatitude'
+      );
+
+
+    if (latitudeInput) {
+
+      latitudeInput.value =
+        Number(
+          place.location.lat()
+        ).toFixed(6);
+
+    }
+
+
+    /*
+     * --------------------------------------
+     * LONGITUDE
+     * --------------------------------------
+     */
+
+    const longitudeInput =
+      document.getElementById(
+        'editAreaLongitude'
+      );
+
+
+    if (longitudeInput) {
+
+      longitudeInput.value =
+        Number(
+          place.location.lng()
+        ).toFixed(6);
+
+    }
+
+
+    /*
+     * --------------------------------------
+     * CITY
+     * --------------------------------------
+     */
+
+    let city =
+      '';
+
+
+    const components =
+      place.addressComponents ||
+      [];
+
+
+    components.forEach(
+      function(component) {
+
+        const types =
+          component.types ||
+          [];
+
+
+        if (
+          !city &&
+          types.indexOf(
+            'locality'
+          ) !== -1
+        ) {
+
+          city =
+            component.longText ||
+            component.shortText ||
+            '';
+
+        }
+
+
+        if (
+          !city &&
+          types.indexOf(
+            'administrative_area_level_2'
+          ) !== -1
+        ) {
+
+          city =
+            component.longText ||
+            component.shortText ||
+            '';
+
+        }
+
+      }
+    );
+
+
+    const cityInput =
+      document.getElementById(
+        'editAreaCity'
+      );
+
+
+    if (
+      cityInput &&
+      city
+    ) {
+
+      cityInput.value =
+        city;
+
+    }
+
+
+    /*
+     * Hide dropdown.
+     */
+
+    dropdown.style.display =
+      'none';
+
+
+    /*
+     * Move map.
+     */
+
+    if (map) {
+
+      const position = {
+
+        lat:
+          Number(
+            place.location.lat()
+          ),
+
+        lng:
+          Number(
+            place.location.lng()
+          )
+
+      };
+
+
+      map.panTo(
+        position
+      );
+
+
+      map.setZoom(
+        15
+      );
+
+    }
+
+
+    /*
+     * Success message.
+     */
+
+    if (status) {
+
+      status.textContent =
+        '✓ Google Maps location selected';
+
+      status.style.color =
+        '#198754';
+
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Google Place selection error:',
+      error
+    );
+
+
+    if (status) {
+
+      status.textContent =
+        'Unable to load the selected Google Maps location.';
+
+      status.style.color =
+        '#dc3545';
+
+    }
+
+  }
+
+}
 
 /*************************************************
  * SAVE INDUSTRIAL AREA
@@ -2941,7 +4016,8 @@ function openEditModal(
 
     '<div class="edit-modal-box">' +
 
-      '<div class="edit-modal-header">' +
+      '<div class="edit-modal-header" ' +
+        'style="cursor:move;">' +
 
         '<div class="edit-modal-title">' +
 
@@ -3019,8 +4095,230 @@ function openEditModal(
     .onclick =
     saveFunction;
 
-}
 
+  /*
+   * MAKE MODAL DRAGGABLE
+   */
+
+  const box =
+    modal.querySelector(
+      '.edit-modal-box'
+    );
+
+
+  const header =
+    modal.querySelector(
+      '.edit-modal-header'
+    );
+
+
+  if (!box || !header) {
+    return;
+  }
+
+
+  /*
+   * Start position
+   */
+
+  box.style.position =
+    'fixed';
+
+
+  box.style.margin =
+    '0';
+
+
+  /*
+   * Keep normal centered position
+   * when first opened
+   */
+
+  const rect =
+    box.getBoundingClientRect();
+
+
+  box.style.left =
+    rect.left + 'px';
+
+
+  box.style.top =
+    rect.top + 'px';
+
+
+  /*
+   * Drag variables
+   */
+
+  let dragging = false;
+
+  let startX = 0;
+
+  let startY = 0;
+
+  let startLeft = 0;
+
+  let startTop = 0;
+
+
+  header.addEventListener(
+    'mousedown',
+    function(event) {
+
+      /*
+       * Do not start dragging
+       * when clicking close button
+       */
+
+      if (
+        event.target.closest(
+          '.modal-close'
+        )
+      ) {
+        return;
+      }
+
+
+      dragging = true;
+
+
+      startX =
+        event.clientX;
+
+
+      startY =
+        event.clientY;
+
+
+      startLeft =
+        parseFloat(
+          box.style.left
+        ) || 0;
+
+
+      startTop =
+        parseFloat(
+          box.style.top
+        ) || 0;
+
+
+      header.style.cursor =
+        'grabbing';
+
+
+      document.body.style.userSelect =
+        'none';
+
+    }
+  );
+
+
+  document.addEventListener(
+    'mousemove',
+    function(event) {
+
+      if (!dragging) {
+        return;
+      }
+
+
+      let newLeft =
+        startLeft +
+        (
+          event.clientX -
+          startX
+        );
+
+
+      let newTop =
+        startTop +
+        (
+          event.clientY -
+          startY
+        );
+
+
+      /*
+       * Keep part of the window
+       * inside the screen
+       */
+
+      const boxWidth =
+        box.offsetWidth;
+
+
+      const boxHeight =
+        box.offsetHeight;
+
+
+      const minVisible =
+        40;
+
+
+      const maxLeft =
+        window.innerWidth -
+        minVisible;
+
+
+      const maxTop =
+        window.innerHeight -
+        minVisible;
+
+
+      newLeft =
+        Math.max(
+          -(boxWidth - minVisible),
+          Math.min(
+            newLeft,
+            maxLeft
+          )
+        );
+
+
+      newTop =
+        Math.max(
+          0,
+          Math.min(
+            newTop,
+            maxTop
+          )
+        );
+
+
+      box.style.left =
+        newLeft + 'px';
+
+
+      box.style.top =
+        newTop + 'px';
+
+    }
+  );
+
+
+  document.addEventListener(
+    'mouseup',
+    function() {
+
+      if (!dragging) {
+        return;
+      }
+
+
+      dragging = false;
+
+
+      header.style.cursor =
+        'move';
+
+
+      document.body.style.userSelect =
+        '';
+
+    }
+  );
+
+}
 
 /*************************************************
  * CLOSE EDIT MODAL
