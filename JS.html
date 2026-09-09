@@ -10,6 +10,21 @@ let areas = [];
 
 let customers = [];
 
+
+/*************************************************
+ * APPLICATION DATA CACHE
+ *
+ * Loaded once when Customers Hub starts.
+ *************************************************/
+
+let allAreasData = [];
+
+let allCustomersData = [];
+
+let allPeopleData = [];
+
+let hubDataLoaded = false;
+
 let markers = [];
 
 let userLocationMarker = null;
@@ -197,6 +212,150 @@ function bindEvents() {
 
 }
 
+/*************************************************
+ * LOAD COMPLETE HUB DATA
+ *
+ * Loads Areas + Customers + People
+ * in ONE backend request.
+ *************************************************/
+
+function loadCustomersHubData() {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(data) {
+
+        data =
+          data || {};
+
+
+        /*
+         * Store all data in browser memory.
+         */
+
+        allAreasData =
+          data.areas || [];
+
+
+        allCustomersData =
+          data.customers || [];
+
+
+        allPeopleData =
+          data.people || [];
+
+
+        /*
+         * Use the loaded data
+         * as the application's main data.
+         */
+
+        areas =
+          allAreasData;
+
+
+        customers =
+          allCustomersData;
+
+
+        allCustomers =
+          allCustomersData;
+
+
+        hubDataLoaded =
+          true;
+
+
+        console.log(
+          'Customers Hub data loaded:',
+          {
+            areas:
+              allAreasData.length,
+
+            customers:
+              allCustomersData.length,
+
+            people:
+              allPeopleData.length
+          }
+        );
+
+
+        /*
+         * Update area count.
+         */
+
+        const areaCount =
+          document.getElementById(
+            'areaCount'
+          );
+
+
+        if (areaCount) {
+
+          areaCount.textContent =
+            allAreasData.length;
+
+        }
+
+
+        /*
+         * Update total customer count.
+         */
+
+        const customerCount =
+          document.getElementById(
+            'totalCustomerCount'
+          );
+
+
+        if (customerCount) {
+
+          customerCount.textContent =
+            allCustomersData.length +
+            ' Customers';
+
+        }
+
+
+        /*
+         * Refresh area markers.
+         *
+         * Customer counts are still loaded
+         * separately for now.
+         */
+
+        if (map) {
+
+          renderAreaMarkers();
+
+        }
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        console.error(
+          'Complete hub data error:',
+          error
+        );
+
+        /*
+         * Do not stop the application.
+         *
+         * Existing individual loaders
+         * remain as fallback.
+         */
+
+      }
+    )
+
+    .getCustomersHubData();
+
+}
 
 /*************************************************
  * LOAD APPLICATION
@@ -207,6 +366,17 @@ function loadApplication() {
   showLoading(true);
 
   hideError();
+
+
+  /*
+   * Start loading Areas + Customers + People
+   * in one backend request.
+   *
+   * This runs in parallel with
+   * the Google Maps loading.
+   */
+
+  loadCustomersHubData();
 
 
   google.script.run
@@ -2018,6 +2188,9 @@ function selectArea(
 
 /*************************************************
  * LOAD CUSTOMERS BY AREA
+ *
+ * Uses preloaded Customers Hub data for instant
+ * area switching.
  *************************************************/
 
 function loadCustomersByArea(
@@ -2031,33 +2204,21 @@ function loadCustomersByArea(
   showCustomerView();
 
 
-  const loading =
-    document.getElementById(
-      'customerLoading'
-    );
-
-
   const list =
     document.getElementById(
       'customerList'
     );
 
 
-  if (loading) {
-
-    loading.classList.remove(
-      'hidden'
+  const loading =
+    document.getElementById(
+      'customerLoading'
     );
 
-  }
 
-
-  if (list) {
-
-    list.innerHTML = '';
-
-  }
-
+  /*
+   * Update selected Industrial Area
+   */
 
   const selectedAreaName =
     document.getElementById(
@@ -2077,6 +2238,10 @@ function loadCustomersByArea(
   }
 
 
+  /*
+   * Update City
+   */
+
   const selectedAreaCity =
     document.getElementById(
       'selectedAreaCity'
@@ -2089,6 +2254,84 @@ function loadCustomersByArea(
       activeArea
         ? activeArea.city
         : '';
+
+  }
+
+
+  /*
+   * If the combined data has loaded,
+   * filter customers directly in browser.
+   */
+
+  if (
+    hubDataLoaded &&
+    Array.isArray(
+      allCustomersData
+    )
+  ) {
+
+    const wantedArea =
+      String(
+        industrialArea || ''
+      )
+        .trim()
+        .toLowerCase();
+
+
+    customers =
+      allCustomersData.filter(
+        function(customer) {
+
+          return String(
+            customer.industrialArea || ''
+          )
+            .trim()
+            .toLowerCase() ===
+            wantedArea;
+
+        }
+      );
+
+
+    /*
+     * No server loading required.
+     */
+
+    if (loading) {
+
+      loading.classList.add(
+        'hidden'
+      );
+
+    }
+
+
+    renderCustomerList();
+
+    return;
+
+  }
+
+
+  /*
+   * FALLBACK
+   *
+   * If preload has not completed yet,
+   * use the existing server call.
+   */
+
+  if (loading) {
+
+    loading.classList.remove(
+      'hidden'
+    );
+
+  }
+
+
+  if (list) {
+
+    list.innerHTML = '';
 
   }
 
@@ -2147,7 +2390,6 @@ function loadCustomersByArea(
     );
 
 }
-
 
 /*************************************************
  * AREA EDIT BUTTON
@@ -4120,11 +4362,78 @@ function formatPotential(
 
 /*************************************************
  * LOAD PEOPLE
+ *
+ * Uses preloaded People data for instant display.
  *************************************************/
 
 function loadPeople(
   companyId
 ) {
+
+  /*
+   * Use preloaded People data whenever available.
+   */
+
+  if (
+    hubDataLoaded &&
+    Array.isArray(
+      allPeopleData
+    )
+  ) {
+
+    const wantedCompanyId =
+      String(
+        companyId || ''
+      )
+        .trim()
+        .toLowerCase();
+
+
+    const people =
+      allPeopleData.filter(
+        function(person) {
+
+          const personCompanyId =
+            getField(
+              person,
+              [
+                'companyId',
+                'Company ID'
+              ]
+            );
+
+
+          return String(
+            personCompanyId || ''
+          )
+            .trim()
+            .toLowerCase() ===
+            wantedCompanyId;
+
+        }
+      );
+
+
+    /*
+     * Render immediately.
+     * No google.script.run required.
+     */
+
+    renderPeople(
+      people
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * FALLBACK
+   *
+   * If preload has not finished yet,
+   * use the existing server call.
+   */
 
   google.script.run
 
@@ -4141,6 +4450,12 @@ function loadPeople(
     .withFailureHandler(
       function(error) {
 
+        console.error(
+          'People error:',
+          error
+        );
+
+
         const container =
           document.getElementById(
             'peopleList'
@@ -4150,19 +4465,11 @@ function loadPeople(
         if (container) {
 
           container.innerHTML =
-
             '<div class="no-contacts">' +
-
               'Unable to load contact details.' +
-
             '</div>';
 
         }
-
-
-        console.error(
-          error
-        );
 
       }
     )
@@ -4172,7 +4479,6 @@ function loadPeople(
     );
 
 }
-
 
 /*************************************************
  * RENDER PEOPLE

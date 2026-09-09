@@ -788,6 +788,237 @@ function getAllCustomers() {
 
 }
 
+/*************************************************
+ * GET COMPLETE CUSTOMERS HUB DATA
+ *
+ * Loads all core data in one backend request:
+ *
+ * - Industrial Areas
+ * - Customers
+ * - People / Contacts
+ *************************************************/
+
+function getCustomersHubData() {
+
+  const areas =
+    getIndustrialAreas();
+
+
+  const customers =
+    getAllCustomers();
+
+
+  const ss =
+    SpreadsheetApp
+      .getActiveSpreadsheet();
+
+
+  const peopleSheet =
+    ss.getSheetByName(
+      PEOPLE_SHEET
+    );
+
+
+  const people = [];
+
+
+  if (peopleSheet) {
+
+    const values =
+      peopleSheet
+        .getDataRange()
+        .getDisplayValues();
+
+
+    if (
+      values.length > 1
+    ) {
+
+      const headers =
+        values[0].map(
+          normalizeHeader
+        );
+
+
+      const indexes = {
+
+        peopleId:
+          findHeader(
+            headers,
+            [
+              'people id',
+              'peopleid'
+            ]
+          ),
+
+        companyId:
+          findHeader(
+            headers,
+            [
+              'company id',
+              'companyid'
+            ]
+          ),
+
+        company:
+          findHeader(
+            headers,
+            [
+              'company'
+            ]
+          ),
+
+        name:
+          findHeader(
+            headers,
+            [
+              'name'
+            ]
+          ),
+
+        designation:
+          findHeader(
+            headers,
+            [
+              'designation'
+            ]
+          ),
+
+        phone:
+          findHeader(
+            headers,
+            [
+              'phone'
+            ]
+          ),
+
+        email:
+          findHeader(
+            headers,
+            [
+              'email'
+            ]
+          ),
+
+        photo:
+          findHeader(
+            headers,
+            [
+              'photo'
+            ]
+          )
+
+      };
+
+
+      for (
+        let i = 1;
+        i < values.length;
+        i++
+      ) {
+
+        const row =
+          values[i];
+
+
+        const photo =
+          getCell(
+            row,
+            indexes.photo
+          );
+
+
+        people.push({
+
+          peopleId:
+            getCell(
+              row,
+              indexes.peopleId
+            ),
+
+          companyId:
+            getCell(
+              row,
+              indexes.companyId
+            ),
+
+          company:
+            getCell(
+              row,
+              indexes.company
+            ),
+
+          name:
+            getCell(
+              row,
+              indexes.name
+            ),
+
+          designation:
+            getCell(
+              row,
+              indexes.designation
+            ),
+
+          phone:
+            getCell(
+              row,
+              indexes.phone
+            ),
+
+          email:
+            getCell(
+              row,
+              indexes.email
+            ),
+
+          photo:
+            photo,
+
+          visitingCardUrl:
+            getGitHubImageUrl(
+              photo
+            )
+
+        });
+
+      }
+
+
+      people.sort(
+        function(a, b) {
+
+          return String(
+            a.name || ''
+          ).localeCompare(
+            String(
+              b.name || ''
+            )
+          );
+
+        }
+      );
+
+    }
+
+  }
+
+
+  return {
+
+    areas:
+      areas,
+
+    customers:
+      customers,
+
+    people:
+      people
+
+  };
+
+}
+
 
 /*************************************************
  * GET CUSTOMER BY ID
